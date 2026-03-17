@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+/* Catppuccin Macchiato Theme */
+:root {
+	/* Base colors */
+	--ctp-rosewater: #f4dbd6;
+	--ctp-flamingo: #f0c6c6;
+	--ctp-pink: #f5bde6;
+	--ctp-mauve: #c6a0f6;
+	--ctp-red: #ed8796;
+	--ctp-maroon: #ee99a0;
+	--ctp-peach: #f5a97f;
+	--ctp-yellow: #eed49f;
+	--ctp-green: #a6d189;
+	--ctp-teal: #8bd5ca;
+	--ctp-sky: #91d7e3;
+	--ctp-sapphire: #7dc4e4;
+	--ctp-blue: #8aadf4;
+	--ctp-lavender: #b7bdf8;
+
+	/* Surface colors */
+	--ctp-text: #cad3f5;
+	--ctp-subtext1: #b8c0e0;
+	--ctp-subtext0: #a5adcb;
+	--ctp-overlay2: #939ab7;
+	--ctp-overlay1: #8087a2;
+	--ctp-overlay0: #6e738d;
+	--ctp-surface2: #5b6078;
+	--ctp-surface1: #494d64;
+	--ctp-surface0: #363a4f;
+	--ctp-base: #24273a;
+	--ctp-mantle: #1e2030;
+	--ctp-crust: #181926;
+
+	/* shadcn-svelte token mappings */
+	--background: var(--ctp-base);
+	--foreground: var(--ctp-text);
+	--card: var(--ctp-surface0);
+	--card-foreground: var(--ctp-text);
+	--popover: var(--ctp-surface0);
+	--popover-foreground: var(--ctp-text);
+	--primary: var(--ctp-blue);
+	--primary-foreground: var(--ctp-crust);
+	--secondary: var(--ctp-teal);
+	--secondary-foreground: var(--ctp-crust);
+	--muted: var(--ctp-surface0);
+	--muted-foreground: var(--ctp-subtext0);
+	--accent: var(--ctp-yellow);
+	--accent-foreground: var(--ctp-crust);
+	--destructive: var(--ctp-red);
+	--destructive-foreground: var(--ctp-crust);
+	--success: var(--ctp-green);
+	--success-foreground: var(--ctp-crust);
+	--warning: var(--ctp-peach);
+	--warning-foreground: var(--ctp-crust);
+	--border: var(--ctp-surface0);
+	--input: var(--ctp-surface0);
+	--ring: var(--ctp-lavender);
+	--sidebar: var(--ctp-mantle);
+	--sidebar-foreground: var(--ctp-text);
+	--radius: 0.5rem;
+}
+
+/* Base styles */
+html,
+body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	background-color: var(--ctp-base);
+	color: var(--ctp-text);
+	font-family:
+		ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+		Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--ctp-mantle);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--ctp-surface1);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--ctp-surface2);
+}
+
+/* Utility classes */
+.pulse-animation {
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+
+.skeleton {
+	background: linear-gradient(
+		90deg,
+		var(--ctp-surface0) 25%,
+		var(--ctp-surface1) 50%,
+		var(--ctp-surface0) 75%
+	);
+	background-size: 200% 100%;
+	animation: skeleton-shimmer 1.5s ease-in-out infinite;
+	border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}

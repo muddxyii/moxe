@@ -5,8 +5,9 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { agents } from "./routes/agents.js";
 import { issues } from "./routes/issues.js";
-import { ptyManager } from "./services/pty.js";
+import { repos } from "./routes/repos.js";
 import { reclaimStalePorts } from "./services/ports.js";
+import { ptyManager } from "./services/pty.js";
 import { registerTerminalWs } from "./ws/terminal.js";
 
 const app = new Hono();
@@ -16,6 +17,7 @@ const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 app.use("*", cors());
 app.route("/api/agents", agents);
 app.route("/api/issues", issues);
+app.route("/api/repos", repos);
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
 registerTerminalWs(app, upgradeWebSocket);

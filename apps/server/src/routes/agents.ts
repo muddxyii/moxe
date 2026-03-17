@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import type { EventType } from "@moxe/db";
 import { agents, db, deriveStatus, desc, eq, events } from "@moxe/db";
 import { Hono } from "hono";
@@ -74,6 +75,56 @@ agentsRoute.delete("/:id", async (c) => {
 	if (!agent) return c.json({ error: "Not found" }, 404);
 	await killAgent(agentId);
 	return c.json({ status: "killed" });
+});
+
+agentsRoute.get("/:id/diff", async (c) => {
+	const agent = db
+		.select()
+		.from(agents)
+		.where(eq(agents.id, c.req.param("id")))
+		.get();
+	if (!agent) return c.json({ error: "Not found" }, 404);
+	const worktreePath = agent.worktreePath;
+	if (!worktreePath) return c.json({ files: [] });
+
+	try {
+		const nameStatus = execSync("git diff --name-status master...HEAD", {
+			cwd: worktreePath,
+			encoding: "utf-8",
+			timeout: 10000,
+		}).trim();
+
+		if (!nameStatus) return c.json({ files: [] });
+
+		const files = nameStatus.split("\n").map((line) => {
+			const [statusChar, ...pathParts] = line.split("\t");
+			const path = pathParts.join("\t");
+			const statusMap: Record<string, string> = {
+				A: "added",
+				M: "modified",
+				D: "deleted",
+				R: "renamed",
+			};
+			const status = statusMap[statusChar?.charAt(0) ?? "M"] ?? "modified";
+
+			let diff = "";
+			try {
+				diff = execSync(`git diff master...HEAD -- "${path}"`, {
+					cwd: worktreePath,
+					encoding: "utf-8",
+					timeout: 10000,
+				});
+			} catch {
+				// file might be binary or deleted
+			}
+
+			return { path, status, diff };
+		});
+
+		return c.json({ files });
+	} catch {
+		return c.json({ files: [] });
+	}
 });
 
 export { agentsRoute as agents };

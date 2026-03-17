@@ -40,13 +40,19 @@ export function readGlobalConfig(): GlobalConfig {
 			scriptTimeout: parsed.scriptTimeout ?? 300_000,
 		};
 	} catch {
-		return { portRangeStart: 4000, portsPerWorkspace: 10, scriptTimeout: 300_000 };
+		return {
+			portRangeStart: 4000,
+			portsPerWorkspace: 10,
+			scriptTimeout: 300_000,
+		};
 	}
 }
 
 function readAllocations(): AllocationsFile {
 	try {
-		return JSON.parse(readFileSync(ALLOCATIONS_PATH, "utf-8")) as AllocationsFile;
+		return JSON.parse(
+			readFileSync(ALLOCATIONS_PATH, "utf-8"),
+		) as AllocationsFile;
 	} catch {
 		const { portRangeStart } = readGlobalConfig();
 		return { allocations: {}, nextBase: portRangeStart };
@@ -114,7 +120,9 @@ export async function reclaimStalePorts(): Promise<void> {
 		if (!existsSync(ALLOCATIONS_PATH)) return;
 		const data = readAllocations();
 		let changed = false;
-		for (const [workspaceName, allocation] of Object.entries(data.allocations)) {
+		for (const [workspaceName, allocation] of Object.entries(
+			data.allocations,
+		)) {
 			const agent = db
 				.select()
 				.from(agents)

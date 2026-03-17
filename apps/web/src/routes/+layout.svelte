@@ -1,9 +1,19 @@
 <script lang="ts">
-let { children } = $props();
+	import "../app.css";
+	import { Toaster } from "svelte-sonner";
+
+	let { children } = $props();
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<title>Moxe</title>
 </svelte:head>
+
+<Toaster
+	position="bottom-right"
+	toastOptions={{
+		style: `background: var(--ctp-surface0); color: var(--ctp-text); border: 1px solid var(--ctp-surface1);`,
+	}}
+/>
 
 {@render children()}
