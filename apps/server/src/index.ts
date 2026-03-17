@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 import { agents } from "./routes/agents.js";
 import { issues } from "./routes/issues.js";
 import { ptyManager } from "./services/pty.js";
+import { reclaimStalePorts } from "./services/ports.js";
 import { registerTerminalWs } from "./ws/terminal.js";
 
 const app = new Hono();
@@ -26,6 +27,11 @@ try {
 		"[moxe] Warning: 'claude' not found in PATH. Install Claude Code before launching agents.",
 	);
 }
+
+// Reclaim ports from previous crashed/finished agents
+reclaimStalePorts().catch((err) => {
+	console.warn("[moxe] Port reclaim failed:", err);
+});
 
 const port = 3456;
 console.log(`Moxe server running on http://localhost:${port}`);
