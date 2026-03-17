@@ -6,3 +6,4 @@ dist/
 .env
 *.db
 .idea
+docs/superpowers/

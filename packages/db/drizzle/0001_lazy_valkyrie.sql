@@ -1,0 +1,1 @@
+ALTER TABLE `agents` ADD `repo_path` text NOT NULL;

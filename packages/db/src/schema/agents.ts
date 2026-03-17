@@ -3,6 +3,7 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const agents = sqliteTable("agents", {
 	id: text("id").primaryKey(),
 	repo: text("repo").notNull(),
+	repoPath: text("repo_path").notNull(),
 	issueNumber: integer("issue_number").notNull(),
 	issueTitle: text("issue_title").notNull(),
 	issueBody: text("issue_body"),
