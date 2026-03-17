@@ -1,0 +1,27 @@
+{
+	"name": "@moxe/db",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./schema": "./src/schema/index.ts",
+		"./client": "./src/client.ts"
+	},
+	"scripts": {
+		"generate": "drizzle-kit generate",
+		"migrate": "drizzle-kit migrate",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist .cache"
+	},
+	"dependencies": {
+		"better-sqlite3": "^11.9.1",
+		"drizzle-orm": "^0.45.1",
+		"nanoid": "^5.1.5"
+	},
+	"devDependencies": {
+		"@types/better-sqlite3": "^7.6.13",
+		"drizzle-kit": "^0.31.8",
+		"typescript": "^5.8.3"
+	}
+}
