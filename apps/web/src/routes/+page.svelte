@@ -6,9 +6,11 @@ import NewAgentModal from "$lib/components/modals/NewAgentModal.svelte";
 import SettingsModal from "$lib/components/modals/SettingsModal.svelte";
 import AgentList from "$lib/components/sidebar/AgentList.svelte";
 import { getSelectionStore } from "$lib/stores/selection.svelte";
+import type { WorkspaceGroup } from "$lib/types";
 
 let showNewAgent = $state(false);
 let showSettings = $state(false);
+let newAgentWorkspace = $state<WorkspaceGroup | null>(null);
 
 const selectionStore = getSelectionStore();
 const agent = $derived(selectionStore.selectedAgent);
@@ -17,7 +19,7 @@ const agent = $derived(selectionStore.selectedAgent);
 <ThreePanel>
 	{#snippet left()}
 		<AgentList
-			onNewAgent={() => (showNewAgent = true)}
+			onNewAgent={(workspace) => { newAgentWorkspace = workspace ?? null; showNewAgent = true; }}
 			onSettings={() => (showSettings = true)}
 		/>
 	{/snippet}
@@ -38,7 +40,7 @@ const agent = $derived(selectionStore.selectedAgent);
 </ThreePanel>
 
 {#if showNewAgent}
-	<NewAgentModal onClose={() => (showNewAgent = false)} />
+	<NewAgentModal preselectedOwner={newAgentWorkspace?.owner} preselectedName={newAgentWorkspace?.name} onClose={() => (showNewAgent = false)} />
 {/if}
 
 {#if showSettings}

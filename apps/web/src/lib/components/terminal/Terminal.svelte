@@ -2,14 +2,13 @@
 import type { Terminal } from "@battlefieldduck/xterm-svelte";
 import { Xterm, XtermAddon } from "@battlefieldduck/xterm-svelte";
 import { onMount } from "svelte";
-import { terminalWsUrl } from "$lib/api";
 import { catppuccinMacchiato } from "./theme";
 
 interface Props {
-	agentId: string;
+	wsUrl: string;
 }
 
-let { agentId }: Props = $props();
+let { wsUrl }: Props = $props();
 
 let terminal: Terminal | undefined = $state();
 let ws: WebSocket | null = null;
@@ -33,7 +32,7 @@ async function onLoad(term: Terminal) {
 	const el = term.element;
 	if (el) observer.observe(el);
 
-	connectWs(agentId);
+	connectWs(wsUrl);
 }
 
 function onData(data: string) {
@@ -42,10 +41,10 @@ function onData(data: string) {
 	}
 }
 
-function connectWs(id: string) {
+function connectWs(url: string) {
 	cleanupWs();
 	connectionStatus = "connecting";
-	ws = new WebSocket(terminalWsUrl(id));
+	ws = new WebSocket(url);
 
 	ws.onopen = () => {
 		connectionStatus = "connected";
@@ -66,7 +65,7 @@ function connectWs(id: string) {
 
 	ws.onclose = () => {
 		connectionStatus = "disconnected";
-		scheduleReconnect(id);
+		scheduleReconnect(url);
 	};
 
 	ws.onerror = () => {
@@ -74,11 +73,11 @@ function connectWs(id: string) {
 	};
 }
 
-function scheduleReconnect(id: string) {
+function scheduleReconnect(url: string) {
 	if (reconnectTimeout) clearTimeout(reconnectTimeout);
 	reconnectTimeout = setTimeout(() => {
 		if (terminal) terminal.clear();
-		connectWs(id);
+		connectWs(url);
 		reconnectDelay = Math.min(reconnectDelay * 2, 10000);
 	}, reconnectDelay);
 }

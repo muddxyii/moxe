@@ -12,9 +12,11 @@ import type { Issue, Repo } from "$lib/types";
 
 interface Props {
 	onClose: () => void;
+	preselectedOwner?: string;
+	preselectedName?: string;
 }
 
-let { onClose }: Props = $props();
+let { onClose, preselectedOwner, preselectedName }: Props = $props();
 
 const agentStore = getAgentStore();
 
@@ -36,6 +38,12 @@ async function loadRepos() {
 	loadingRepos = true;
 	try {
 		repos = await fetchRepos();
+		if (preselectedOwner && preselectedName) {
+			const match = repos.find(
+				(r) => r.owner === preselectedOwner && r.name === preselectedName,
+			);
+			if (match) handleRepoSelect(match);
+		}
 	} catch {
 		// toast shown by api client
 	} finally {

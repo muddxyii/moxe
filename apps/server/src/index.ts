@@ -8,6 +8,7 @@ import { issues } from "./routes/issues.js";
 import { repos } from "./routes/repos.js";
 import { reclaimStalePorts } from "./services/ports.js";
 import { ptyManager } from "./services/pty.js";
+import { registerShellWs } from "./ws/shell.js";
 import { registerTerminalWs } from "./ws/terminal.js";
 
 const app = new Hono();
@@ -21,6 +22,7 @@ app.route("/api/repos", repos);
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
 registerTerminalWs(app, upgradeWebSocket);
+registerShellWs(app, upgradeWebSocket);
 
 try {
 	const shell = process.env.SHELL || "/bin/zsh";

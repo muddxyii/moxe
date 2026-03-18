@@ -1,25 +1,10 @@
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { Hono } from "hono";
+import { REPOS_PATH, type RepoEntry, readRepos } from "../lib/repos.js";
 import { pickDirectory } from "../services/system-picker.js";
-
-const REPOS_PATH = join(homedir(), ".moxe", "repos.json");
-
-interface RepoEntry {
-	owner: string;
-	name: string;
-	localPath: string;
-}
-
-function readRepos(): RepoEntry[] {
-	try {
-		return JSON.parse(readFileSync(REPOS_PATH, "utf-8"));
-	} catch {
-		return [];
-	}
-}
 
 function writeRepos(repos: RepoEntry[]) {
 	const dir = join(homedir(), ".moxe");

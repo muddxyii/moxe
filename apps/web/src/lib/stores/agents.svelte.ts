@@ -1,7 +1,8 @@
-import { fetchAgents } from "$lib/api";
-import type { Agent, AgentStatus, WorkspaceGroup } from "$lib/types";
+import { fetchAgents, fetchRepos } from "$lib/api";
+import type { Agent, AgentStatus, Repo, WorkspaceGroup } from "$lib/types";
 
 let agents = $state<Agent[]>([]);
+let repos = $state<Repo[]>([]);
 let loading = $state(true);
 let showCompleted = $state(false);
 let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -12,41 +13,27 @@ const ACTIVE_STATUSES: Set<AgentStatus> = new Set([
 	"running",
 ]);
 
-const agentsGroupedByRepo = $derived(() => {
-	const groups = new Map<string, Agent[]>();
-	for (const agent of agents) {
-		const list = groups.get(agent.repo) ?? [];
-		list.push(agent);
-		groups.set(agent.repo, list);
+const workspaceGroups = $derived(() => {
+	const groups: WorkspaceGroup[] = [];
+	for (const repo of repos) {
+		const repoKey = `${repo.owner}/${repo.name}`;
+		const repoAgents = agents.filter((a) => a.repo === repoKey);
+		groups.push({
+			workspaceId: repoKey,
+			label: repo.name,
+			owner: repo.owner,
+			name: repo.name,
+			localPath: repo.localPath,
+			activeAgents: repoAgents.filter((a) => ACTIVE_STATUSES.has(a.status)),
+			completedAgents: repoAgents.filter((a) => !ACTIVE_STATUSES.has(a.status)),
+		});
 	}
 	return groups;
 });
 
-const workspaceGroups = $derived(() => {
-	const groupMap = new Map<string, WorkspaceGroup>();
-	for (const agent of agents) {
-		let group = groupMap.get(agent.repo);
-		if (!group) {
-			group = {
-				workspaceId: agent.repo,
-				label: agent.repo,
-				activeAgents: [],
-				completedAgents: [],
-			};
-			groupMap.set(agent.repo, group);
-		}
-		if (ACTIVE_STATUSES.has(agent.status)) {
-			group.activeAgents.push(agent);
-		} else {
-			group.completedAgents.push(agent);
-		}
-	}
-	return Array.from(groupMap.values());
-});
-
-async function refreshAgents() {
+async function refresh() {
 	try {
-		agents = await fetchAgents();
+		[agents, repos] = await Promise.all([fetchAgents(), fetchRepos()]);
 	} catch {
 		// toast already shown by api client
 	} finally {
@@ -55,8 +42,8 @@ async function refreshAgents() {
 }
 
 function startPolling() {
-	refreshAgents();
-	pollInterval = setInterval(refreshAgents, 3000);
+	refresh();
+	pollInterval = setInterval(refresh, 3000);
 }
 
 function stopPolling() {
@@ -75,11 +62,11 @@ export function getAgentStore() {
 		get agents() {
 			return agents;
 		},
+		get repos() {
+			return repos;
+		},
 		get loading() {
 			return loading;
-		},
-		get grouped() {
-			return agentsGroupedByRepo();
 		},
 		get workspaceGroups() {
 			return workspaceGroups();
@@ -89,7 +76,7 @@ export function getAgentStore() {
 		},
 		startPolling,
 		stopPolling,
-		refreshAgents,
+		refreshAgents: refresh,
 		toggleCompleted,
 	};
 }

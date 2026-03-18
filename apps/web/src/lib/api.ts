@@ -83,3 +83,7 @@ export async function deleteRepo(owner: string, name: string): Promise<void> {
 export function terminalWsUrl(agentId: string): string {
 	return `ws://localhost:3456/ws/terminal/${agentId}`;
 }
+
+export function shellWsUrl(owner: string, name: string): string {
+	return `ws://localhost:3456/ws/shell/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
+}

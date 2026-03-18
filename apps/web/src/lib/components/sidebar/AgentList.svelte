@@ -3,9 +3,10 @@ import { onMount } from "svelte";
 import RepoGroup from "$lib/components/sidebar/RepoGroup.svelte";
 import { getAgentStore } from "$lib/stores/agents.svelte";
 import { getSelectionStore } from "$lib/stores/selection.svelte";
+import type { WorkspaceGroup } from "$lib/types";
 
 interface Props {
-	onNewAgent: () => void;
+	onNewAgent: (workspace?: WorkspaceGroup) => void;
 	onSettings: () => void;
 }
 
@@ -29,6 +30,11 @@ function handleKeydown(e: KeyboardEvent) {
 		}
 	}
 }
+
+function isShellActive(owner: string, name: string): boolean {
+	const sel = selectionStore.selection;
+	return sel?.type === "shell" && sel.owner === owner && sel.name === name;
+}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -36,7 +42,7 @@ function handleKeydown(e: KeyboardEvent) {
 <div class="flex h-full flex-col bg-[var(--sidebar)]">
 	<!-- Header -->
 	<div class="flex items-center justify-between border-b border-[var(--border)] px-3 py-3">
-		<span class="text-sm font-semibold text-[var(--ctp-text)]">Agents</span>
+		<span class="text-sm font-semibold text-[var(--ctp-text)]">Workspaces</span>
 		<button
 			class="rounded p-1 text-[var(--ctp-subtext0)] transition-colors hover:bg-[var(--ctp-surface0)] hover:text-[var(--ctp-text)]"
 			onclick={onSettings}
@@ -50,10 +56,10 @@ function handleKeydown(e: KeyboardEvent) {
 		</button>
 	</div>
 
-	<!-- Agent list -->
+	<!-- Workspace list -->
 	<div class="flex-1 overflow-y-auto py-2">
 		{#if agentStore.loading}
-			{#each Array(4) as _}
+			{#each Array(3) as _}
 				<div class="px-3 py-2">
 					<div class="skeleton mb-2 h-4 w-3/4"></div>
 					<div class="skeleton h-3 w-1/2"></div>
@@ -61,17 +67,18 @@ function handleKeydown(e: KeyboardEvent) {
 			{/each}
 		{:else if agentStore.workspaceGroups.length === 0}
 			<div class="px-3 py-8 text-center text-sm text-[var(--ctp-subtext0)]">
-				No agents yet. Create one to get started.
+				No workspaces yet. Add one in Settings.
 			</div>
 		{:else}
 			{#each agentStore.workspaceGroups as workspace (workspace.workspaceId)}
 				<RepoGroup
-					repo={workspace.label}
-					agents={workspace.activeAgents}
-					completedAgents={workspace.completedAgents}
+					{workspace}
 					showCompleted={agentStore.showCompleted}
 					selectedAgentId={selectionStore.selectedAgentId}
-					onSelect={(id: string) => selectionStore.selectAgent(id)}
+					shellActive={isShellActive(workspace.owner, workspace.name)}
+					onSelectAgent={(id: string) => selectionStore.selectAgent(id)}
+					onSelectShell={() => selectionStore.selectShell(workspace.owner, workspace.name)}
+					onNewAgent={onNewAgent}
 				/>
 			{/each}
 		{/if}
@@ -100,7 +107,7 @@ function handleKeydown(e: KeyboardEvent) {
 	<div class="border-t border-[var(--border)] p-3">
 		<button
 			class="w-full rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-sm font-medium text-[var(--ctp-text)] transition-colors hover:bg-[var(--ctp-surface1)]"
-			onclick={onNewAgent}
+			onclick={() => onNewAgent()}
 		>
 			+ New Agent
 		</button>

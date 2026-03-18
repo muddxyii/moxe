@@ -69,8 +69,13 @@ export interface Repo {
 }
 
 export type WorkspaceGroup = {
-	workspaceId: string; // e.g. "owner/repo"
-	label: string; // display name
+	workspaceId: string; // "owner/name"
+	label: string;
+	owner: string;
+	name: string;
+	localPath: string;
 	activeAgents: Agent[];
 	completedAgents: Agent[];
 };
+
+export type ShellSession = Repo;
