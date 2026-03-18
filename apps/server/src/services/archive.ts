@@ -7,7 +7,7 @@ import {
 	readFileSync,
 } from "node:fs";
 import { basename, join, resolve as resolvePath } from "node:path";
-import { agents, db, eq } from "@moxe/db";
+import { agents, db, eq, events } from "@moxe/db";
 import { appendEvent, getStatus } from "./events.js";
 import { deallocatePorts, readGlobalConfig } from "./ports.js";
 import { ptyManager } from "./pty.js";
@@ -196,7 +196,8 @@ export async function archiveAgent(agentId: string): Promise<void> {
 
 		await appendEvent(agentId, "archive_done");
 
-		// Delete the agent row only after full cleanup succeeds
+		// Delete events first (FK constraint), then the agent row
+		db.delete(events).where(eq(events.agentId, agentId)).run();
 		db.delete(agents).where(eq(agents.id, agentId)).run();
 	} catch (error) {
 		await appendEvent(agentId, "archive_failed", {

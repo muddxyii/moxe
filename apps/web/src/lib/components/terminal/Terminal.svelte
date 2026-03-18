@@ -1,4 +1,6 @@
 <script lang="ts">
+import type { Terminal } from "@battlefieldduck/xterm-svelte";
+import { Xterm, XtermAddon } from "@battlefieldduck/xterm-svelte";
 import { onMount } from "svelte";
 import { terminalWsUrl } from "$lib/api";
 import { catppuccinMacchiato } from "./theme";
@@ -9,9 +11,7 @@ interface Props {
 
 let { agentId }: Props = $props();
 
-let containerEl: HTMLDivElement;
-let terminal: import("@xterm/xterm").Terminal | null = null;
-let fitAddon: import("@xterm/addon-fit").FitAddon | null = null;
+let terminal: Terminal | undefined = $state();
 let ws: WebSocket | null = null;
 let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 let reconnectDelay = 1000;
@@ -19,37 +19,32 @@ let connectionStatus = $state<"connecting" | "connected" | "disconnected">(
 	"connecting",
 );
 
-async function setup(id: string) {
-	cleanup();
-	connectionStatus = "connecting";
-
-	const { Terminal } = await import("@xterm/xterm");
-	const { FitAddon } = await import("@xterm/addon-fit");
-	const { WebLinksAddon } = await import("@xterm/addon-web-links");
-
-	await import("@xterm/xterm/css/xterm.css");
-
-	terminal = new Terminal({
-		theme: catppuccinMacchiato,
-		scrollback: 10000,
-		fontFamily:
-			"'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
-		fontSize: 13,
-		cursorBlink: true,
-		convertEol: true,
-	});
-
-	fitAddon = new FitAddon();
-	terminal.loadAddon(fitAddon);
-	terminal.loadAddon(new WebLinksAddon());
-
-	terminal.open(containerEl);
+async function onLoad(term: Terminal) {
+	const { FitAddon } = await XtermAddon.FitAddon();
+	const { WebLinksAddon } = await XtermAddon.WebLinksAddon();
+	const fitAddon = new FitAddon();
+	const webLinksAddon = new WebLinksAddon();
+	term.loadAddon(fitAddon);
+	term.loadAddon(webLinksAddon);
 	fitAddon.fit();
+	term.focus();
 
-	connectWs(id);
+	const observer = new ResizeObserver(() => fitAddon.fit());
+	const el = term.element;
+	if (el) observer.observe(el);
+
+	connectWs(agentId);
+}
+
+function onData(data: string) {
+	if (ws?.readyState === WebSocket.OPEN) {
+		ws.send(data);
+	}
 }
 
 function connectWs(id: string) {
+	cleanupWs();
+	connectionStatus = "connecting";
 	ws = new WebSocket(terminalWsUrl(id));
 
 	ws.onopen = () => {
@@ -58,7 +53,13 @@ function connectWs(id: string) {
 	};
 
 	ws.onmessage = (event) => {
-		if (terminal && typeof event.data === "string") {
+		if (!terminal || typeof event.data !== "string") return;
+		try {
+			const msg = JSON.parse(event.data);
+			if (msg.type === "output") {
+				terminal.write(msg.data);
+			}
+		} catch {
 			terminal.write(event.data);
 		}
 	};
@@ -76,15 +77,13 @@ function connectWs(id: string) {
 function scheduleReconnect(id: string) {
 	if (reconnectTimeout) clearTimeout(reconnectTimeout);
 	reconnectTimeout = setTimeout(() => {
-		if (terminal) {
-			terminal.clear();
-		}
+		if (terminal) terminal.clear();
 		connectWs(id);
 		reconnectDelay = Math.min(reconnectDelay * 2, 10000);
 	}, reconnectDelay);
 }
 
-function cleanup() {
+function cleanupWs() {
 	if (reconnectTimeout) {
 		clearTimeout(reconnectTimeout);
 		reconnectTimeout = null;
@@ -94,32 +93,28 @@ function cleanup() {
 		ws.close();
 		ws = null;
 	}
-	if (terminal) {
-		terminal.dispose();
-		terminal = null;
-		fitAddon = null;
-	}
 }
 
 onMount(() => {
-	setup(agentId);
-	const observer = new ResizeObserver(() => fitAddon?.fit());
-	observer.observe(containerEl);
-	return () => {
-		observer.disconnect();
-		cleanup();
-	};
-});
-
-$effect(() => {
-	if (agentId) {
-		setup(agentId);
-	}
+	return () => cleanupWs();
 });
 </script>
 
 <div class="relative h-full w-full">
-	<div bind:this={containerEl} class="h-full w-full"></div>
+	<Xterm
+		bind:terminal
+		options={{
+			theme: catppuccinMacchiato,
+			scrollback: 10000,
+			fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+			fontSize: 13,
+			cursorBlink: true,
+			convertEol: true,
+		}}
+		{onLoad}
+		{onData}
+		class="h-full w-full"
+	/>
 
 	{#if connectionStatus === "connecting"}
 		<div

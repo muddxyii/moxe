@@ -23,7 +23,8 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 registerTerminalWs(app, upgradeWebSocket);
 
 try {
-	execSync("which claude", { stdio: "ignore" });
+	const shell = process.env.SHELL || "/bin/zsh";
+	execSync(`${shell} -lc 'which claude'`, { stdio: "ignore" });
 } catch {
 	console.warn(
 		"[moxe] Warning: 'claude' not found in PATH. Install Claude Code before launching agents.",

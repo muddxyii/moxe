@@ -1,4 +1,4 @@
-import type { ITheme } from "@xterm/xterm";
+import type { ITheme } from "@battlefieldduck/xterm-svelte";
 
 export const catppuccinMacchiato: ITheme = {
 	background: "#24273a",

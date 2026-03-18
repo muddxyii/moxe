@@ -21,6 +21,20 @@ function dotColor(type: string): string {
 	if (failureEvents.has(type)) return "var(--ctp-red)";
 	return "var(--ctp-blue)";
 }
+
+function parseError(payload: string | null): string | null {
+	if (!payload) return null;
+	try {
+		const parsed = JSON.parse(payload);
+		const parts = [
+			parsed.error,
+			parsed.command ? `command: ${parsed.command}` : null,
+		].filter(Boolean);
+		return parts.join(" — ") || null;
+	} catch {
+		return null;
+	}
+}
 </script>
 
 <div class="flex flex-col">
@@ -45,6 +59,11 @@ function dotColor(type: string): string {
 				<span class="ml-2 text-xs text-[var(--ctp-subtext0)]">
 					{timeAgo(event.ts)}
 				</span>
+				{#if failureEvents.has(event.type) && parseError(event.payload)}
+					<p class="mt-1 rounded bg-[var(--ctp-surface0)] px-2 py-1 font-mono text-xs text-[var(--ctp-red)]">
+						{parseError(event.payload)}
+					</p>
+				{/if}
 			</div>
 		</div>
 	{/each}

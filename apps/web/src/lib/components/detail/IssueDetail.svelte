@@ -12,9 +12,11 @@ let { agent }: Props = $props();
 
 let events = $state<AgentEvent[]>([]);
 let loading = $state(true);
+let currentAgentId = $state<string | null>(null);
+let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-async function loadDetail(id: string) {
-	loading = true;
+async function loadDetail(id: string, showLoading = false) {
+	if (showLoading) loading = true;
 	try {
 		const detail = await fetchAgent(id);
 		events = detail.events ?? [];
@@ -26,7 +28,16 @@ async function loadDetail(id: string) {
 }
 
 $effect(() => {
-	loadDetail(agent.id);
+	const id = agent.id;
+	if (id !== currentAgentId) {
+		currentAgentId = id;
+		if (pollInterval) clearInterval(pollInterval);
+		loadDetail(id, true);
+		pollInterval = setInterval(() => loadDetail(id), 5000);
+	}
+	return () => {
+		if (pollInterval) clearInterval(pollInterval);
+	};
 });
 
 const labels = $derived(() => {

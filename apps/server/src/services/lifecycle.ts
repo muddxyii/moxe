@@ -31,8 +31,11 @@ function readConfig(repoPath: string): RepoConfig {
 		// No config — use defaults
 	}
 
-	const command = typeof raw.command === "string" ? raw.command : "claude";
-	const args = Array.isArray(raw.args) ? (raw.args as string[]) : ["-p"];
+	const command =
+		typeof raw.command === "string"
+			? raw.command
+			: process.env.SHELL || "/bin/zsh";
+	const args = Array.isArray(raw.args) ? (raw.args as string[]) : [];
 
 	function resolveScript(key: string, fallbackName: string): string | null {
 		const configured =
@@ -258,7 +261,10 @@ async function pipeline(agentId: string): Promise<void> {
 			});
 		});
 	} catch (err) {
-		await appendEvent(agentId, "agent_failed", { error: String(err) });
+		await appendEvent(agentId, "agent_failed", {
+			error: String(err),
+			command: config.command,
+		});
 		return;
 	}
 
