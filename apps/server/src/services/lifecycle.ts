@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import {
 	accessSync,
 	constants,
@@ -5,7 +6,6 @@ import {
 	existsSync,
 	readFileSync,
 } from "node:fs";
-import { spawn } from "node:child_process";
 import { basename, join, resolve as resolvePath } from "node:path";
 import { agents, db, eq, nanoid } from "@moxe/db";
 import { appendEvent } from "./events.js";
@@ -49,7 +49,9 @@ function readConfig(repoPath: string): RepoConfig {
 		try {
 			accessSync(scriptPath, constants.X_OK);
 		} catch {
-			console.warn(`[moxe] Warning: ${scriptPath} exists but is not executable`);
+			console.warn(
+				`[moxe] Warning: ${scriptPath} exists but is not executable`,
+			);
 		}
 		return scriptPath;
 	}
@@ -191,7 +193,12 @@ async function teardown(agentId: string): Promise<void> {
 
 	// Step 2: remove worktree (failure is logged, not fatal)
 	try {
-		await removeWorktree(agent.repoPath, agent.worktreePath, agent.branch, true);
+		await removeWorktree(
+			agent.repoPath,
+			agent.worktreePath,
+			agent.branch,
+			true,
+		);
 	} catch (err) {
 		console.warn(`[moxe] removeWorktree failed for agent ${agentId}:`, err);
 	}
@@ -268,7 +275,10 @@ async function pipeline(agentId: string): Promise<void> {
 			(entry): entry is [string, string] => entry[1] != null,
 		),
 	);
-	const env: NodeJS.ProcessEnv = { ...baseEnv, ...buildMoxeEnv(agentWithPorts) };
+	const env: NodeJS.ProcessEnv = {
+		...baseEnv,
+		...buildMoxeEnv(agentWithPorts),
+	};
 
 	// Step 3: run setup script
 	if (config.setup) {
