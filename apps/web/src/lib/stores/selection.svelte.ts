@@ -23,6 +23,49 @@ function locationKey(sel: NonNullable<Selection>): LocationKey {
 	return `shell:${sel.owner}/${sel.name}`;
 }
 
+function loadTabsFromStorage(key: LocationKey): Tab[] {
+	try {
+		const raw = localStorage.getItem(`moxe:tabs:${key}`);
+		return raw ? (JSON.parse(raw) as Tab[]) : [];
+	} catch {
+		return [];
+	}
+}
+
+function loadActiveTabFromStorage(key: LocationKey): string | undefined {
+	try {
+		return localStorage.getItem(`moxe:activeTab:${key}`) ?? undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function persistTabs(
+	key: LocationKey,
+	tabList: Tab[],
+	activeId: string | undefined,
+) {
+	try {
+		localStorage.setItem(`moxe:tabs:${key}`, JSON.stringify(tabList));
+		if (activeId) {
+			localStorage.setItem(`moxe:activeTab:${key}`, activeId);
+		} else {
+			localStorage.removeItem(`moxe:activeTab:${key}`);
+		}
+	} catch {
+		// localStorage may be unavailable (SSR, private browsing quota)
+	}
+}
+
+function clearTabsFromStorage(key: LocationKey) {
+	try {
+		localStorage.removeItem(`moxe:tabs:${key}`);
+		localStorage.removeItem(`moxe:activeTab:${key}`);
+	} catch {
+		// ignore
+	}
+}
+
 export function getSelectionStore() {
 	return {
 		get selection() {
@@ -52,12 +95,25 @@ export function getSelectionStore() {
 		locationKeyForSelection(sel: NonNullable<Selection>): LocationKey {
 			return locationKey(sel);
 		},
+		restoreTabsForLocation(key: LocationKey) {
+			const stored = loadTabsFromStorage(key);
+			if (stored.length > 0) {
+				tabs[key] = stored;
+				const activeId = loadActiveTabFromStorage(key);
+				if (activeId && stored.some((t) => t.id === activeId)) {
+					activeTabId[key] = activeId;
+				} else {
+					activeTabId[key] = stored[0].id;
+				}
+			}
+		},
 		openTab(key: LocationKey, wsUrl: string, id = crypto.randomUUID()) {
 			const existing = tabs[key] ?? [];
 			const n = existing.length + 1;
 			const tab: Tab = { id, title: `Terminal ${n}`, wsUrl };
 			tabs[key] = [...existing, tab];
 			activeTabId[key] = tab.id;
+			persistTabs(key, tabs[key], activeTabId[key]);
 		},
 		closeTab(key: LocationKey, tabId: string) {
 			const existing = tabs[key] ?? [];
@@ -66,12 +122,20 @@ export function getSelectionStore() {
 			tabs[key] = next;
 			if (next.length === 0) {
 				delete activeTabId[key];
+				clearTabsFromStorage(key);
 			} else {
 				activeTabId[key] = next[Math.max(0, idx - 1)].id;
+				persistTabs(key, tabs[key], activeTabId[key]);
 			}
 		},
 		switchTab(key: LocationKey, tabId: string) {
 			activeTabId[key] = tabId;
+			persistTabs(key, tabs[key] ?? [], tabId);
+		},
+		clearLocation(key: LocationKey) {
+			delete tabs[key];
+			delete activeTabId[key];
+			clearTabsFromStorage(key);
 		},
 	};
 }

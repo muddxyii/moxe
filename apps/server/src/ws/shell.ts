@@ -5,6 +5,7 @@ import type { Hono } from "hono";
 import type { UpgradeWebSocket, WSContext } from "hono/ws";
 import { readRepos } from "../lib/repos.js";
 import { ptyManager } from "../services/pty.js";
+import { sessionStore } from "../services/session-store.js";
 import { claimInputOwnershipIfAlive } from "./input-ownership.js";
 
 const inputOwners = new Map<string, WSContext>();
@@ -45,11 +46,15 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 							`${owner}-${name}${tabId ? `-${tabId}` : ""}.log`,
 						);
 
+						// Use stored CWD if available, fall back to repo.localPath
+						const stored = sessionStore.get(sessionKey);
+						const cwd = stored?.cwd ?? repo.localPath;
+
 						try {
 							instance = ptyManager.spawn(sessionKey, {
 								command: shell,
 								args: ["-l"],
-								cwd: repo.localPath,
+								cwd,
 								env: { ...process.env, TERM: "xterm-color" },
 								logPath,
 							});

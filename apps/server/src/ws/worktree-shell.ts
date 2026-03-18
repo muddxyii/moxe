@@ -5,6 +5,7 @@ import { agents, db, eq } from "@moxe/db";
 import type { Hono } from "hono";
 import type { UpgradeWebSocket, WSContext } from "hono/ws";
 import { ptyManager } from "../services/pty.js";
+import { sessionStore } from "../services/session-store.js";
 import { claimInputOwnershipIfAlive } from "./input-ownership.js";
 
 const inputOwners = new Map<string, WSContext>();
@@ -50,11 +51,15 @@ export function registerWorktreeShellWs(
 							`worktree-${agentId}-${tabId ?? "default"}.log`,
 						);
 
+						// Use stored CWD if available, fall back to agent.worktreePath
+						const stored = sessionStore.get(sessionKey);
+						const cwd = stored?.cwd ?? agent.worktreePath;
+
 						try {
 							instance = ptyManager.spawn(sessionKey, {
 								command: shell,
 								args: ["-l"],
-								cwd: agent.worktreePath,
+								cwd,
 								env: { ...process.env, TERM: "xterm-color" },
 								logPath,
 							});

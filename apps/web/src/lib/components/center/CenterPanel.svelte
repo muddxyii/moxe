@@ -46,9 +46,22 @@ function handleSwitch(tabId: string) {
 	selectionStore.switchTab(locationKey, tabId);
 }
 
+function kindFromWsUrl(wsUrl: string): "shell" | "worktree-shell" | "agent" {
+	if (wsUrl.includes("/ws/terminal/")) return "agent";
+	if (wsUrl.includes("/ws/worktree-shell/")) return "worktree-shell";
+	return "shell";
+}
+
 // Auto-open first tab when arriving at a location with no tabs
 $effect(() => {
-	if (locationKey && currentTabs.length === 0) {
+	if (!locationKey) return;
+	// Try to restore from localStorage first
+	if (currentTabs.length === 0) {
+		selectionStore.restoreTabsForLocation(locationKey);
+	}
+	// Read tabs directly from reactive state (not the $derived currentTabs) —
+	// $derived values don't update mid-effect after a synchronous mutation.
+	if ((selectionStore.tabs[locationKey] ?? []).length === 0) {
 		handleAdd();
 	}
 });
@@ -99,7 +112,7 @@ $effect(() => {
 					class="absolute inset-0"
 					style="visibility:{tab.id === activeId ? 'visible' : 'hidden'};"
 				>
-					<Terminal wsUrl={tab.wsUrl} />
+					<Terminal wsUrl={tab.wsUrl} kind={kindFromWsUrl(tab.wsUrl)} />
 				</div>
 			{/each}
 		</div>

@@ -1,6 +1,7 @@
 import type { WriteStream } from "node:fs";
 import { createWriteStream } from "node:fs";
 import * as pty from "node-pty";
+import { sessionStore } from "./session-store.js";
 
 export type PtyInstance = {
 	pty: pty.IPty;
@@ -47,6 +48,7 @@ class PtyManager {
 		this.instances.set(agentId, instance);
 		this.outputBuffers.set(agentId, "");
 		this.flushScheduled.set(agentId, false);
+		sessionStore.set(agentId, cwd);
 
 		proc.onData((data: string) => {
 			const current = this.outputBuffers.get(agentId) ?? "";
@@ -64,6 +66,7 @@ class PtyManager {
 			instance.alive = false;
 			instance.exitCode = exitCode;
 			this.flush(agentId);
+			sessionStore.end(agentId);
 		});
 
 		return instance;
@@ -148,6 +151,10 @@ class PtyManager {
 			// ignore
 		}
 		instance.alive = false;
+
+		// Ensure session is marked ended regardless of which exit path fired.
+		// onExit may also call this — SessionStore.end() is idempotent (sets endedAt once).
+		sessionStore.end(agentId);
 	}
 
 	write(agentId: string, data: string): void {
@@ -187,6 +194,9 @@ class PtyManager {
 
 	async shutdownAll(): Promise<void> {
 		const agentIds = Array.from(this.instances.keys());
+		// Mark all sessions as ended upfront — ensures endedAt is set even if kill() or onExit
+		// fires after process teardown has begun.
+		sessionStore.endAll(agentIds);
 		await Promise.all(agentIds.map((id) => this.kill(id)));
 		for (const id of agentIds) {
 			this.cleanup(id);

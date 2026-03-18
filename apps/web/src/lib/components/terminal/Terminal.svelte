@@ -6,9 +6,10 @@ import { catppuccinMacchiato } from "./theme";
 
 interface Props {
 	wsUrl: string;
+	kind: "shell" | "worktree-shell" | "agent";
 }
 
-let { wsUrl }: Props = $props();
+let { wsUrl, kind }: Props = $props();
 
 let terminal: Terminal | undefined = $state();
 let ws: WebSocket | null = null;
@@ -17,6 +18,7 @@ let reconnectDelay = 1000;
 let connectionStatus = $state<"connecting" | "connected" | "disconnected">(
 	"connecting",
 );
+let processAlive = $state(true);
 
 async function onLoad(term: Terminal) {
 	const { FitAddon } = await XtermAddon.FitAddon();
@@ -44,6 +46,7 @@ function onData(data: string) {
 function connectWs(url: string) {
 	cleanupWs();
 	connectionStatus = "connecting";
+	processAlive = true; // optimistic reset — server will correct via status message
 	ws = new WebSocket(url);
 
 	ws.onopen = () => {
@@ -57,6 +60,8 @@ function connectWs(url: string) {
 			const msg = JSON.parse(event.data);
 			if (msg.type === "output") {
 				terminal.write(msg.data);
+			} else if (msg.type === "status") {
+				processAlive = msg.alive as boolean;
 			}
 		} catch {
 			terminal.write(event.data);
@@ -94,6 +99,16 @@ function cleanupWs() {
 	}
 }
 
+function reconnectNow() {
+	if (reconnectTimeout) {
+		clearTimeout(reconnectTimeout);
+		reconnectTimeout = null;
+	}
+	if (terminal) terminal.clear();
+	connectWs(wsUrl);
+	reconnectDelay = 1000;
+}
+
 onMount(() => {
 	return () => cleanupWs();
 });
@@ -116,16 +131,26 @@ onMount(() => {
 	/>
 
 	{#if connectionStatus === "connecting"}
-		<div
-			class="absolute inset-0 flex items-center justify-center bg-[var(--ctp-base)]/80"
-		>
+		<div class="absolute inset-0 flex items-center justify-center bg-[var(--ctp-base)]/80">
 			<span class="text-sm text-[var(--ctp-subtext0)]">Connecting...</span>
 		</div>
 	{:else if connectionStatus === "disconnected"}
-		<div
-			class="absolute inset-0 flex items-center justify-center bg-[var(--ctp-base)]/80"
-		>
+		<div class="absolute inset-0 flex items-center justify-center bg-[var(--ctp-base)]/80">
 			<span class="text-sm text-[var(--ctp-peach)]">Disconnected — reconnecting...</span>
+		</div>
+	{:else if !processAlive}
+		<div class="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 py-2 bg-[var(--ctp-surface0)] border-t border-[var(--border)]">
+			{#if kind === "agent"}
+				<span class="text-sm text-[var(--ctp-subtext0)]">Agent process ended</span>
+			{:else}
+				<span class="text-sm text-[var(--ctp-subtext0)]">Shell exited</span>
+				<button
+					class="text-xs px-3 py-1 rounded bg-[var(--ctp-blue)] text-[var(--ctp-base)] hover:bg-[var(--ctp-sapphire)] transition-colors"
+					onclick={reconnectNow}
+				>
+					Reconnect
+				</button>
+			{/if}
 		</div>
 	{/if}
 </div>
