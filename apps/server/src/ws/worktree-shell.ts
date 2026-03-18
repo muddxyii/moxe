@@ -5,6 +5,7 @@ import { agents, db, eq } from "@moxe/db";
 import type { Hono } from "hono";
 import type { UpgradeWebSocket, WSContext } from "hono/ws";
 import { ptyManager } from "../services/pty.js";
+import { claimInputOwnershipIfAlive } from "./input-ownership.js";
 
 const inputOwners = new Map<string, WSContext>();
 const unsubscribers = new WeakMap<WSContext, () => void>();
@@ -89,7 +90,14 @@ export function registerWorktreeShellWs(
 					const data =
 						typeof event.data === "string" ? event.data : event.data.toString();
 					const instance = ptyManager.get(sessionKey);
-					if (instance?.alive && inputOwners.get(sessionKey) === ws) {
+					if (
+						claimInputOwnershipIfAlive(
+							inputOwners,
+							sessionKey,
+							ws,
+							instance?.alive ?? false,
+						)
+					) {
 						ptyManager.write(sessionKey, data);
 					}
 				},
