@@ -1,7 +1,5 @@
 <script lang="ts">
-	import type { Agent } from "$lib/types";
-	import { truncate, timeAgo } from "$lib/utils";
-	import StatusBadge from "./StatusBadge.svelte";
+import type { Agent } from "$lib/types";
 
 interface Props {
 	agent: Agent;

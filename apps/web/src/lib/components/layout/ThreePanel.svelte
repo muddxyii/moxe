@@ -1,7 +1,5 @@
 <script lang="ts">
-	import ResizablePanel from "./ResizablePanel.svelte";
-
-	interface Props {
+interface Props {
 	left: import("svelte").Snippet;
 	center: import("svelte").Snippet;
 	right: import("svelte").Snippet;

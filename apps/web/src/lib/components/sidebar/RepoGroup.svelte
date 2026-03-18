@@ -1,6 +1,5 @@
 <script lang="ts">
-	import type { Agent } from "$lib/types";
-	import AgentRow from "./AgentRow.svelte";
+import type { Agent } from "$lib/types";
 
 interface Props {
 	repo: string;

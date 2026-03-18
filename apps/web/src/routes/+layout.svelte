@@ -1,8 +1,7 @@
 <script lang="ts">
-	import "../app.css";
-	import { Toaster } from "svelte-sonner";
+import "../app.css";
 
-	let { children } = $props();
+let { children } = $props();
 </script>
 
 <svelte:head>

@@ -1,17 +1,11 @@
 <script lang="ts">
-	import ThreePanel from "$lib/components/layout/ThreePanel.svelte";
-	import AgentList from "$lib/components/sidebar/AgentList.svelte";
-	import CenterPanel from "$lib/components/center/CenterPanel.svelte";
-	import IssueDetail from "$lib/components/detail/IssueDetail.svelte";
-	import NewAgentModal from "$lib/components/modals/NewAgentModal.svelte";
-	import SettingsModal from "$lib/components/modals/SettingsModal.svelte";
-	import { getSelectionStore } from "$lib/stores/selection.svelte";
+import { getSelectionStore } from "$lib/stores/selection.svelte";
 
-	let showNewAgent = $state(false);
-	let showSettings = $state(false);
+let showNewAgent = $state(false);
+let showSettings = $state(false);
 
-	const selectionStore = getSelectionStore();
-	const agent = $derived(selectionStore.selectedAgent);
+const selectionStore = getSelectionStore();
+const agent = $derived(selectionStore.selectedAgent);
 </script>
 
 <ThreePanel>

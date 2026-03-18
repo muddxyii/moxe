@@ -1,11 +1,7 @@
 <script lang="ts">
-	import { getSelectionStore } from "$lib/stores/selection.svelte";
-	import CenterTopBar from "./CenterTopBar.svelte";
-	import EmptyState from "./EmptyState.svelte";
-	import Terminal from "$lib/components/terminal/Terminal.svelte";
-	import DiffViewer from "$lib/components/diff/DiffViewer.svelte";
+import { getSelectionStore } from "$lib/stores/selection.svelte";
 
-	let mode = $state<"terminal" | "changes">("terminal");
+let mode = $state<"terminal" | "changes">("terminal");
 
 const selectionStore = getSelectionStore();
 const agent = $derived(selectionStore.selectedAgent);

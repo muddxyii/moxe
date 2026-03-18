@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { getAgentStore } from "$lib/stores/agents.svelte";
-	import { getSelectionStore } from "$lib/stores/selection.svelte";
-	import RepoGroup from "./RepoGroup.svelte";
+import { onMount } from "svelte";
+import { getAgentStore } from "$lib/stores/agents.svelte";
+import { getSelectionStore } from "$lib/stores/selection.svelte";
 
 interface Props {
 	onNewAgent: () => void;

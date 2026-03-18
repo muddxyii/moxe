@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { fetchDiff } from "$lib/api";
-	import type { Agent, DiffFile } from "$lib/types";
-	import FileTree from "./FileTree.svelte";
+import { fetchDiff } from "$lib/api";
+import type { Agent, DiffFile } from "$lib/types";
 
 interface Props {
 	agentId: string;
