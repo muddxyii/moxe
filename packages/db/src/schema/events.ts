@@ -21,20 +21,18 @@ export type EventType =
 	| "agent_start"
 	| "agent_done"
 	| "agent_failed"
-	| "teardown_start"
-	| "teardown_done"
-	| "teardown_failed"
-	| "pr_created"
-	| "issue_closed"
+	| "archive_start"
+	| "archive_done"
+	| "archive_failed"
 	| "killed";
 
 export type AgentStatus =
 	| "pending"
 	| "setting_up"
 	| "running"
-	| "completing"
-	| "tearing_down"
-	| "done"
+	| "completed"
+	| "archiving"
+	| "archive_failed"
 	| "failed"
 	| "killed";
 
@@ -46,13 +44,11 @@ const statusMap: Record<EventType, AgentStatus> = {
 	setup_done: "setting_up",
 	setup_failed: "failed",
 	agent_start: "running",
-	agent_done: "completing",
+	agent_done: "completed",
 	agent_failed: "failed",
-	teardown_start: "tearing_down",
-	teardown_done: "done",
-	teardown_failed: "failed",
-	pr_created: "done",
-	issue_closed: "done",
+	archive_start: "archiving",
+	archive_done: "archiving",
+	archive_failed: "archive_failed",
 	killed: "killed",
 };
 

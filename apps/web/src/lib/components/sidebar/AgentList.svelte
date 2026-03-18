@@ -58,20 +58,41 @@ function handleKeydown(e: KeyboardEvent) {
 					<div class="skeleton h-3 w-1/2"></div>
 				</div>
 			{/each}
-		{:else if agentStore.grouped.size === 0}
+		{:else if agentStore.workspaceGroups.length === 0}
 			<div class="px-3 py-8 text-center text-sm text-[var(--ctp-subtext0)]">
 				No agents yet. Create one to get started.
 			</div>
 		{:else}
-			{#each [...agentStore.grouped] as [repo, agents] (repo)}
+			{#each agentStore.workspaceGroups as workspace (workspace.workspaceId)}
 				<RepoGroup
-					{repo}
-					{agents}
+					repo={workspace.label}
+					agents={workspace.activeAgents}
+					completedAgents={workspace.completedAgents}
+					showCompleted={agentStore.showCompleted}
 					selectedAgentId={selectionStore.selectedAgentId}
-					onSelect={(id) => selectionStore.selectAgent(id)}
+					onSelect={(id: string) => selectionStore.selectAgent(id)}
 				/>
 			{/each}
 		{/if}
+	</div>
+
+	<!-- Completed toggle -->
+	<div class="border-t border-[var(--border)] px-3 py-2">
+		<button
+			class="flex w-full items-center gap-2 text-xs text-[var(--ctp-subtext0)] transition-colors hover:text-[var(--ctp-text)]"
+			onclick={agentStore.toggleCompleted}
+		>
+			<span
+				class="inline-flex h-4 w-4 items-center justify-center rounded border transition-colors {agentStore.showCompleted ? 'border-[var(--ctp-blue)] bg-[var(--ctp-blue)]' : 'border-[var(--ctp-overlay0)]'}"
+			>
+				{#if agentStore.showCompleted}
+					<svg class="h-3 w-3 text-[var(--ctp-crust)]" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M2.5 6l2.5 2.5 4.5-5" />
+					</svg>
+				{/if}
+			</span>
+			Show completed
+		</button>
 	</div>
 
 	<!-- New Agent button -->

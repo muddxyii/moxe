@@ -7,16 +7,11 @@ interface Props {
 
 let { events }: Props = $props();
 
-const successEvents = new Set([
-	"agent_done",
-	"teardown_done",
-	"pr_created",
-	"issue_closed",
-]);
+const successEvents = new Set(["agent_done", "archive_done"]);
 const failureEvents = new Set([
 	"setup_failed",
 	"agent_failed",
-	"teardown_failed",
+	"archive_failed",
 	"killed",
 ]);
 

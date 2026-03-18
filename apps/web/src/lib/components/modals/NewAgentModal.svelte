@@ -140,10 +140,10 @@ $effect(() => {
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 py-3">
-			<!-- Step 1: Select Repo -->
+			<!-- Step 1: Select Workspace -->
 			<div class="mb-4">
 				<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-[var(--ctp-subtext0)]">
-					Repository
+					Workspace
 				</label>
 
 				{#if loadingRepos}
@@ -166,7 +166,7 @@ $effect(() => {
 								class="w-full rounded-md border border-dashed border-[var(--ctp-surface1)] px-3 py-2 text-sm text-[var(--ctp-subtext0)] transition-colors hover:border-[var(--ctp-surface2)] hover:text-[var(--ctp-text)]"
 								onclick={() => (showAddRepo = true)}
 							>
-								+ Add repository
+								+ Add workspace
 							</button>
 						{:else}
 							<div class="flex gap-2">

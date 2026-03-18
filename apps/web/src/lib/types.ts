@@ -2,9 +2,9 @@ export type AgentStatus =
 	| "pending"
 	| "setting_up"
 	| "running"
-	| "completing"
-	| "tearing_down"
-	| "done"
+	| "completed"
+	| "archiving"
+	| "archive_failed"
 	| "failed"
 	| "killed";
 
@@ -18,11 +18,9 @@ export type EventType =
 	| "agent_start"
 	| "agent_done"
 	| "agent_failed"
-	| "teardown_start"
-	| "teardown_done"
-	| "teardown_failed"
-	| "pr_created"
-	| "issue_closed"
+	| "archive_start"
+	| "archive_done"
+	| "archive_failed"
 	| "killed";
 
 export interface AgentEvent {
@@ -45,8 +43,6 @@ export interface Agent {
 	logPath: string | null;
 	pid: number | null;
 	portBase: number | null;
-	prNumber: number | null;
-	prUrl: string | null;
 	createdAt: string;
 	finishedAt: string | null;
 	status: AgentStatus;
@@ -71,3 +67,10 @@ export interface Repo {
 	name: string;
 	localPath: string;
 }
+
+export type WorkspaceGroup = {
+	workspaceId: string; // e.g. "owner/repo"
+	label: string; // display name
+	activeAgents: Agent[];
+	completedAgents: Agent[];
+};

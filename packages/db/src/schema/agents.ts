@@ -12,8 +12,6 @@ export const agents = sqliteTable("agents", {
 	logPath: text("log_path"),
 	pid: integer("pid"),
 	portBase: integer("port_base"),
-	prNumber: integer("pr_number"),
-	prUrl: text("pr_url"),
 	createdAt: text("created_at").notNull(),
 	finishedAt: text("finished_at"),
 });

@@ -17,10 +17,6 @@ const selectedFile = $derived(
 	files.find((f) => f.path === selectedPath) ?? null,
 );
 
-const canCreatePr = $derived(
-	(agent.status === "done" || agent.status === "completing") && !agent.prUrl,
-);
-
 async function loadDiff(id: string) {
 	loading = true;
 	try {
@@ -95,13 +91,6 @@ function parseDiffLines(
 						>
 							Open in VS Code
 						</button>
-						{#if canCreatePr}
-							<button
-								class="rounded bg-[var(--ctp-green)] px-2 py-1 text-xs font-medium text-[var(--ctp-crust)] transition-opacity hover:opacity-80"
-							>
-								Create PR
-							</button>
-						{/if}
 					</div>
 				</div>
 			</div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { killAgent } from "$lib/api";
+import { archiveAgent, killAgent } from "$lib/api";
 import { getAgentStore } from "$lib/stores/agents.svelte";
 import type { Agent } from "$lib/types";
 
@@ -12,12 +12,15 @@ interface Props {
 let { agent, mode, onModeChange }: Props = $props();
 
 let confirmingKill = $state(false);
+let archiving = $state(false);
 const agentStore = getAgentStore();
 
-const isRunning = $derived(
-	["pending", "setting_up", "running", "completing", "tearing_down"].includes(
-		agent.status,
-	),
+const canKill = $derived(
+	["pending", "setting_up", "running"].includes(agent.status),
+);
+
+const canArchive = $derived(
+	["completed", "failed", "killed", "archive_failed"].includes(agent.status),
 );
 
 async function handleKill() {
@@ -29,6 +32,16 @@ async function handleKill() {
 	await killAgent(agent.id);
 	confirmingKill = false;
 	agentStore.refreshAgents();
+}
+
+async function handleArchive() {
+	archiving = true;
+	try {
+		await archiveAgent(agent.id);
+		agentStore.refreshAgents();
+	} finally {
+		archiving = false;
+	}
 }
 </script>
 
@@ -63,8 +76,19 @@ async function handleKill() {
 			</button>
 		</div>
 
+		<!-- Archive button -->
+		{#if canArchive}
+			<button
+				class="rounded-md bg-[var(--ctp-surface0)] px-3 py-1 text-xs font-medium text-[var(--ctp-green)] transition-colors hover:bg-[var(--ctp-green)] hover:text-[var(--ctp-crust)] disabled:opacity-50"
+				onclick={handleArchive}
+				disabled={archiving}
+			>
+				{archiving ? "Archiving..." : "Archive"}
+			</button>
+		{/if}
+
 		<!-- Kill button -->
-		{#if isRunning}
+		{#if canKill}
 			<button
 				class="rounded-md px-3 py-1 text-xs font-medium transition-colors {confirmingKill ? 'bg-[var(--ctp-red)] text-[var(--ctp-crust)]' : 'bg-[var(--ctp-surface0)] text-[var(--ctp-red)] hover:bg-[var(--ctp-red)] hover:text-[var(--ctp-crust)]'}"
 				onclick={handleKill}
@@ -73,16 +97,5 @@ async function handleKill() {
 			</button>
 		{/if}
 
-		<!-- PR link -->
-		{#if agent.prUrl}
-			<a
-				href={agent.prUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="rounded-md bg-[var(--ctp-green)] px-3 py-1 text-xs font-medium text-[var(--ctp-crust)] transition-opacity hover:opacity-80"
-			>
-				PR #{agent.prNumber}
-			</a>
-		{/if}
 	</div>
 </div>

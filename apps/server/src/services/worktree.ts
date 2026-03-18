@@ -2,6 +2,7 @@ import { execFile as execFileCb } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { resolveBaseBranch } from "./base-branch.js";
 
 const execFile = promisify(execFileCb);
 
@@ -38,9 +39,10 @@ export async function createWorktree(
 	agentId: string,
 ): Promise<{ worktreePath: string; branch: string; logPath: string }> {
 	const paths = resolvePaths(issueNumber, issueTitle, agentId);
+	const baseBranch = await resolveBaseBranch(repoPath);
 	await execFile(
 		"git",
-		["worktree", "add", "-b", paths.branch, paths.worktreePath, "HEAD"],
+		["worktree", "add", "-b", paths.branch, paths.worktreePath, baseBranch],
 		{ cwd: repoPath },
 	);
 	return paths;

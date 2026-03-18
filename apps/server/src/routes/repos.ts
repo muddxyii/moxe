@@ -71,7 +71,7 @@ repos.post("/", async (c) => {
 	const existing = readRepos();
 	const duplicate = existing.find((r) => r.owner === owner && r.name === name);
 	if (duplicate) {
-		return c.json({ error: "Repo already registered" }, 409);
+		return c.json({ error: "Workspace already registered" }, 409);
 	}
 
 	const entry: RepoEntry = { owner, name, localPath: body.localPath };
@@ -88,7 +88,7 @@ repos.delete("/:owner/:name", (c) => {
 		(r) => !(r.owner === owner && r.name === name),
 	);
 	if (filtered.length === existing.length) {
-		return c.json({ error: "Repo not found" }, 404);
+		return c.json({ error: "Workspace not found" }, 404);
 	}
 	writeRepos(filtered);
 	return c.json({ status: "deleted" });

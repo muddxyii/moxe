@@ -4,13 +4,25 @@ import type { Agent } from "$lib/types";
 interface Props {
 	repo: string;
 	agents: Agent[];
+	completedAgents: Agent[];
+	showCompleted: boolean;
 	selectedAgentId: string | null;
 	onSelect: (id: string) => void;
 }
 
-let { repo, agents, selectedAgentId, onSelect }: Props = $props();
+let {
+	repo,
+	agents,
+	completedAgents,
+	showCompleted,
+	selectedAgentId,
+	onSelect,
+}: Props = $props();
 
 let collapsed = $state(false);
+
+const hasActiveAgents = $derived(agents.length > 0);
+const hasCompletedAgents = $derived(completedAgents.length > 0);
 </script>
 
 <div class="mb-1">
@@ -38,6 +50,20 @@ let collapsed = $state(false);
 					onclick={() => onSelect(agent.id)}
 				/>
 			{/each}
+
+			{#if showCompleted && hasCompletedAgents}
+				{#if hasActiveAgents}
+					<div class="mx-3 my-1 border-t border-[var(--ctp-surface0)]"></div>
+				{/if}
+				{#each completedAgents as agent (agent.id)}
+					<AgentRow
+						{agent}
+						active={agent.id === selectedAgentId}
+						onclick={() => onSelect(agent.id)}
+						dimmed
+					/>
+				{/each}
+			{/if}
 		</div>
 	{/if}
 </div>

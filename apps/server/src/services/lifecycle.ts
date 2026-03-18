@@ -9,10 +9,9 @@ import {
 import { basename, join, resolve as resolvePath } from "node:path";
 import { agents, db, eq, nanoid } from "@moxe/db";
 import { appendEvent } from "./events.js";
-import { closeIssue, createPr, generatePrBody } from "./github.js";
-import { allocatePorts, deallocatePorts, readGlobalConfig } from "./ports.js";
+import { allocatePorts, readGlobalConfig } from "./ports.js";
 import { ptyManager } from "./pty.js";
-import { createWorktree, removeWorktree, resolvePaths } from "./worktree.js";
+import { createWorktree, resolvePaths } from "./worktree.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -21,8 +20,6 @@ interface RepoConfig {
 	command: string;
 	args: string[];
 	setup: string | null;
-	teardown: string | null;
-	baseBranch: string;
 }
 
 function readConfig(repoPath: string): RepoConfig {
@@ -36,8 +33,6 @@ function readConfig(repoPath: string): RepoConfig {
 
 	const command = typeof raw.command === "string" ? raw.command : "claude";
 	const args = Array.isArray(raw.args) ? (raw.args as string[]) : ["-p"];
-	const baseBranch =
-		typeof raw.baseBranch === "string" ? raw.baseBranch : "master";
 
 	function resolveScript(key: string, fallbackName: string): string | null {
 		const configured =
@@ -60,8 +55,6 @@ function readConfig(repoPath: string): RepoConfig {
 		command,
 		args,
 		setup: resolveScript("setup", "setup.sh"),
-		teardown: resolveScript("teardown", "teardown.sh"),
-		baseBranch,
 	};
 }
 
@@ -151,74 +144,6 @@ function buildPrompt(issueTitle: string, issueBody?: string | null): string {
 }
 
 // ---------------------------------------------------------------------------
-// Teardown
-
-async function teardown(agentId: string): Promise<void> {
-	const agent = db.select().from(agents).where(eq(agents.id, agentId)).get();
-	if (!agent) return;
-
-	await appendEvent(agentId, "teardown_start");
-
-	ptyManager.cleanup(agentId);
-
-	const config = readConfig(agent.repoPath);
-	const { scriptTimeout } = readGlobalConfig();
-	const logPath = agent.logPath ?? join(agent.worktreePath, "agent.log");
-	const baseEnv = Object.fromEntries(
-		Object.entries(process.env).filter(
-			(entry): entry is [string, string] => entry[1] != null,
-		),
-	);
-	const env: NodeJS.ProcessEnv = { ...baseEnv, ...buildMoxeEnv(agent) };
-
-	// Step 1: run teardown.sh (failure is logged, not fatal)
-	if (config.teardown) {
-		try {
-			const { exitCode } = await runScript(
-				config.teardown,
-				agent.worktreePath,
-				env,
-				logPath,
-				scriptTimeout,
-			);
-			if (exitCode !== 0) {
-				console.warn(
-					`[moxe] teardown.sh exited with code ${exitCode} for agent ${agentId}`,
-				);
-			}
-		} catch (err) {
-			console.warn(`[moxe] teardown.sh threw for agent ${agentId}:`, err);
-		}
-	}
-
-	// Step 2: remove worktree (failure is logged, not fatal)
-	try {
-		await removeWorktree(
-			agent.repoPath,
-			agent.worktreePath,
-			agent.branch,
-			true,
-		);
-	} catch (err) {
-		console.warn(`[moxe] removeWorktree failed for agent ${agentId}:`, err);
-	}
-
-	// Step 3: deallocate ports (failure is logged, not fatal)
-	try {
-		await deallocatePorts(basename(agent.worktreePath));
-	} catch (err) {
-		console.warn(`[moxe] deallocatePorts failed for agent ${agentId}:`, err);
-	}
-
-	await appendEvent(agentId, "teardown_done");
-
-	db.update(agents)
-		.set({ finishedAt: new Date().toISOString() })
-		.where(eq(agents.id, agentId))
-		.run();
-}
-
-// ---------------------------------------------------------------------------
 // Pipeline
 
 async function pipeline(agentId: string): Promise<void> {
@@ -243,7 +168,6 @@ async function pipeline(agentId: string): Promise<void> {
 			error: String(err),
 			step: "worktree_created",
 		});
-		await teardown(agentId);
 		return;
 	}
 
@@ -258,7 +182,6 @@ async function pipeline(agentId: string): Promise<void> {
 			error: String(err),
 			step: "ports_allocated",
 		});
-		await teardown(agentId);
 		return;
 	}
 
@@ -293,12 +216,10 @@ async function pipeline(agentId: string): Promise<void> {
 			);
 			if (exitCode !== 0) {
 				await appendEvent(agentId, "setup_failed", { exitCode });
-				await teardown(agentId);
 				return;
 			}
 		} catch (err) {
 			await appendEvent(agentId, "setup_failed", { error: String(err) });
-			await teardown(agentId);
 			return;
 		}
 		await appendEvent(agentId, "setup_done");
@@ -338,60 +259,17 @@ async function pipeline(agentId: string): Promise<void> {
 		});
 	} catch (err) {
 		await appendEvent(agentId, "agent_failed", { error: String(err) });
-		await teardown(agentId);
 		return;
 	}
 
-	// Step 5: generate PR body while worktree still exists (success path only)
-	let prBody: string | null = null;
-	if (exitCode === 0) {
-		try {
-			prBody = await generatePrBody(
-				agent.worktreePath,
-				agent.issueNumber,
-				config.baseBranch,
-			);
-		} catch (err) {
-			console.warn(`[moxe] generatePrBody failed for agent ${agentId}:`, err);
-		}
-	}
-
+	// Step 5: record result — no teardown, no PR, no cleanup
+	// Resources stay intact until explicit archive
 	if (exitCode === 0) {
 		await appendEvent(agentId, "agent_done");
-	} else {
-		await appendEvent(agentId, "agent_failed", { exitCode });
+		return;
 	}
 
-	// Step 6: teardown always runs
-	await teardown(agentId);
-
-	// Step 7: create PR and close issue (success path only, after worktree removed)
-	if (exitCode === 0 && prBody) {
-		try {
-			const { prNumber, prUrl } = await createPr(
-				agent.repo,
-				agent.branch,
-				agent.issueNumber,
-				agent.issueTitle,
-				prBody,
-				config.baseBranch,
-			);
-			await appendEvent(agentId, "pr_created", { prNumber, prUrl });
-			db.update(agents)
-				.set({ prNumber, prUrl })
-				.where(eq(agents.id, agentId))
-				.run();
-		} catch (err) {
-			console.error(`[moxe] createPr failed for agent ${agentId}:`, err);
-		}
-
-		try {
-			await closeIssue(agent.repo, agent.issueNumber);
-			await appendEvent(agentId, "issue_closed");
-		} catch (err) {
-			console.error(`[moxe] closeIssue failed for agent ${agentId}:`, err);
-		}
-	}
+	await appendEvent(agentId, "agent_failed", { exitCode });
 }
 
 // ---------------------------------------------------------------------------
@@ -421,8 +299,6 @@ export async function launchAgent(
 			logPath: paths.logPath,
 			pid: null,
 			portBase: null,
-			prNumber: null,
-			prUrl: null,
 			createdAt: now,
 			finishedAt: null,
 		})
@@ -442,5 +318,5 @@ export async function launchAgent(
 export async function killAgent(agentId: string): Promise<void> {
 	await ptyManager.kill(agentId);
 	await appendEvent(agentId, "killed");
-	await teardown(agentId);
+	// NO teardown, NO cleanup — archive will handle it
 }

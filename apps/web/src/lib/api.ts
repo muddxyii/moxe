@@ -44,6 +44,10 @@ export async function killAgent(id: string): Promise<void> {
 	await request(`/api/agents/${id}`, { method: "DELETE" });
 }
 
+export async function archiveAgent(id: string): Promise<void> {
+	await request(`/api/agents/${id}/archive`, { method: "POST" });
+}
+
 export async function fetchIssues(repo: string): Promise<Issue[]> {
 	return request(`/api/issues?repo=${encodeURIComponent(repo)}`);
 }

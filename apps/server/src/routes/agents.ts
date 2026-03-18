@@ -2,6 +2,8 @@ import { execSync } from "node:child_process";
 import type { EventType } from "@moxe/db";
 import { agents, db, deriveStatus, desc, eq, events } from "@moxe/db";
 import { Hono } from "hono";
+import { archiveAgent } from "../services/archive.js";
+import { resolveBaseBranch } from "../services/base-branch.js";
 import { killAgent, launchAgent } from "../services/lifecycle.js";
 
 export const agentsRoute = new Hono();
@@ -77,6 +79,21 @@ agentsRoute.delete("/:id", async (c) => {
 	return c.json({ status: "killed" });
 });
 
+agentsRoute.post("/:id/archive", async (c) => {
+	const agentId = c.req.param("id");
+	const agent = db.select().from(agents).where(eq(agents.id, agentId)).get();
+	if (!agent) return c.json({ error: "Not found" }, 404);
+	try {
+		await archiveAgent(agentId);
+		return c.json({ status: "archived" });
+	} catch (err) {
+		return c.json(
+			{ error: err instanceof Error ? err.message : String(err) },
+			400,
+		);
+	}
+});
+
 agentsRoute.get("/:id/diff", async (c) => {
 	const agent = db
 		.select()
@@ -88,7 +105,8 @@ agentsRoute.get("/:id/diff", async (c) => {
 	if (!worktreePath) return c.json({ files: [] });
 
 	try {
-		const nameStatus = execSync("git diff --name-status master...HEAD", {
+		const baseBranch = await resolveBaseBranch(agent.repoPath);
+		const nameStatus = execSync(`git diff --name-status ${baseBranch}...HEAD`, {
 			cwd: worktreePath,
 			encoding: "utf-8",
 			timeout: 10000,
@@ -109,7 +127,7 @@ agentsRoute.get("/:id/diff", async (c) => {
 
 			let diff = "";
 			try {
-				diff = execSync(`git diff master...HEAD -- "${path}"`, {
+				diff = execSync(`git diff ${baseBranch}...HEAD -- "${path}"`, {
 					cwd: worktreePath,
 					encoding: "utf-8",
 					timeout: 10000,

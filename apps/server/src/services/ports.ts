@@ -128,6 +128,8 @@ export async function reclaimStalePorts(): Promise<void> {
 				.from(agents)
 				.where(eq(agents.id, allocation.agentId))
 				.get();
+			// Only reclaim ports for agents that no longer exist or have been
+			// archived (finishedAt is set by archive, not by agent completion).
 			if (!agent || agent.finishedAt !== null) {
 				delete data.allocations[workspaceName];
 				changed = true;

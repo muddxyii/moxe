@@ -5,14 +5,16 @@ interface Props {
 	agent: Agent;
 	active: boolean;
 	onclick: () => void;
+	dimmed?: boolean;
 }
 
-let { agent, active, onclick }: Props = $props();
+let { agent, active, onclick, dimmed = false }: Props = $props();
 </script>
 
 <button
 	class="flex w-full flex-col gap-1 rounded-md px-3 py-2 text-left transition-colors hover:bg-[var(--ctp-surface0)]"
 	class:bg-[var(--ctp-surface1)]={active}
+	class:opacity-60={dimmed && !active}
 	{onclick}
 >
 	<div class="flex items-center justify-between gap-2">
