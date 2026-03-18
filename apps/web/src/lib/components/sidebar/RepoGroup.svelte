@@ -1,4 +1,5 @@
 <script lang="ts">
+import AgentRow from "$lib/components/sidebar/AgentRow.svelte";
 import type { Agent } from "$lib/types";
 
 interface Props {

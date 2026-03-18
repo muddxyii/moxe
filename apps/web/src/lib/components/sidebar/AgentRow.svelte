@@ -1,5 +1,7 @@
 <script lang="ts">
+import StatusBadge from "$lib/components/sidebar/StatusBadge.svelte";
 import type { Agent } from "$lib/types";
+import { timeAgo, truncate } from "$lib/utils";
 
 interface Props {
 	agent: Agent;

@@ -239,7 +239,7 @@ $effect(() => {
 											<div class="mt-1 flex flex-wrap gap-1">
 												{#each issue.labels as label}
 													<span class="rounded-full bg-[var(--ctp-surface1)] px-1.5 py-0.5 text-[10px] text-[var(--ctp-subtext0)]">
-														{typeof label === "string" ? label : label.name}
+														{label}
 													</span>
 												{/each}
 											</div>

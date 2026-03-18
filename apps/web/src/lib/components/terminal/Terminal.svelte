@@ -27,7 +27,6 @@ async function setup(id: string) {
 	const { FitAddon } = await import("@xterm/addon-fit");
 	const { WebLinksAddon } = await import("@xterm/addon-web-links");
 
-	// @ts-expect-error -- xterm css import
 	await import("@xterm/xterm/css/xterm.css");
 
 	terminal = new Terminal({
@@ -100,10 +99,6 @@ function cleanup() {
 		terminal = null;
 		fitAddon = null;
 	}
-}
-
-function handleResize() {
-	fitAddon?.fit();
 }
 
 onMount(() => {

@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { AgentEvent } from "$lib/types";
+import { formatEventType, timeAgo } from "$lib/utils";
 
 interface Props {
 	events: AgentEvent[];

@@ -1,5 +1,6 @@
 <script lang="ts">
 import { fetchDiff } from "$lib/api";
+import FileTree from "$lib/components/diff/FileTree.svelte";
 import type { Agent, DiffFile } from "$lib/types";
 
 interface Props {
@@ -68,7 +69,11 @@ function parseDiffLines(
 				No changes found
 			</div>
 		{:else}
-			<FileTree {files} {selectedPath} onSelect={(p) => (selectedPath = p)} />
+			<FileTree
+				{files}
+				{selectedPath}
+				onSelect={(p: string) => (selectedPath = p)}
+			/>
 		{/if}
 	</div>
 

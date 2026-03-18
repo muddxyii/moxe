@@ -1,5 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
+import RepoGroup from "$lib/components/sidebar/RepoGroup.svelte";
 import { getAgentStore } from "$lib/stores/agents.svelte";
 import { getSelectionStore } from "$lib/stores/selection.svelte";
 

@@ -1,4 +1,10 @@
 <script lang="ts">
+import CenterPanel from "$lib/components/center/CenterPanel.svelte";
+import IssueDetail from "$lib/components/detail/IssueDetail.svelte";
+import ThreePanel from "$lib/components/layout/ThreePanel.svelte";
+import NewAgentModal from "$lib/components/modals/NewAgentModal.svelte";
+import SettingsModal from "$lib/components/modals/SettingsModal.svelte";
+import AgentList from "$lib/components/sidebar/AgentList.svelte";
 import { getSelectionStore } from "$lib/stores/selection.svelte";
 
 let showNewAgent = $state(false);

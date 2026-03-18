@@ -1,5 +1,7 @@
 <script lang="ts">
 import { fetchAgent } from "$lib/api";
+import EventTimeline from "$lib/components/detail/EventTimeline.svelte";
+import MarkdownRenderer from "$lib/components/detail/MarkdownRenderer.svelte";
 import type { Agent, AgentEvent } from "$lib/types";
 
 interface Props {
