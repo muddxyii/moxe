@@ -1,39 +1,44 @@
 import { mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { agents, db, eq } from "@moxe/db";
 import type { Hono } from "hono";
 import type { UpgradeWebSocket, WSContext } from "hono/ws";
-import { readRepos } from "../lib/repos.js";
 import { ptyManager } from "../services/pty.js";
 
 const inputOwners = new Map<string, WSContext>();
 const unsubscribers = new WeakMap<WSContext, () => void>();
 
-export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
+export function registerWorktreeShellWs(
+	app: Hono,
+	upgradeWebSocket: UpgradeWebSocket,
+) {
 	app.get(
-		"/ws/shell/:owner/:name",
+		"/ws/worktree-shell/:agentId",
 		upgradeWebSocket((c) => {
-			const owner = c.req.param("owner") as string;
-			const name = c.req.param("name") as string;
+			const agentId = c.req.param("agentId") as string;
 			const tabId = c.req.query("tabId");
-			const sessionKey = tabId
-				? `shell:${owner}/${name}:${tabId}`
-				: `shell:${owner}/${name}`;
+			const sessionKey = `worktree-shell:${agentId}:${tabId ?? "default"}`;
 
 			return {
 				onOpen(_event, ws) {
-					// Find the registered repo
-					const repos = readRepos();
-					const repo = repos.find((r) => r.owner === owner && r.name === name);
-					if (!repo) {
+					const agent = db
+						.select()
+						.from(agents)
+						.where(eq(agents.id, agentId))
+						.get();
+
+					if (!agent?.worktreePath) {
 						ws.send(
-							JSON.stringify({ type: "error", message: "Workspace not found" }),
+							JSON.stringify({
+								type: "error",
+								message: "Agent or worktree not found",
+							}),
 						);
 						ws.close();
 						return;
 					}
 
-					// Spawn shell if not already running
 					let instance = ptyManager.get(sessionKey);
 					if (!instance || !instance.alive) {
 						const shell = process.env.SHELL || "/bin/zsh";
@@ -41,14 +46,14 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 						mkdirSync(logDir, { recursive: true });
 						const logPath = join(
 							logDir,
-							`${owner}-${name}${tabId ? `-${tabId}` : ""}.log`,
+							`worktree-${agentId}-${tabId ?? "default"}.log`,
 						);
 
 						try {
 							instance = ptyManager.spawn(sessionKey, {
 								command: shell,
 								args: ["-l"],
-								cwd: repo.localPath,
+								cwd: agent.worktreePath,
 								env: { ...process.env, TERM: "xterm-color" },
 								logPath,
 							});
@@ -64,16 +69,13 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 						}
 					}
 
-					// Subscribe to live output
 					const unsub = ptyManager.subscribe(sessionKey, (data) => {
 						ws.send(JSON.stringify({ type: "output", data }));
 					});
 					unsubscribers.set(ws, unsub);
 
-					// Input ownership
 					if (!inputOwners.has(sessionKey)) inputOwners.set(sessionKey, ws);
 
-					// Send current status
 					ws.send(
 						JSON.stringify({
 							type: "status",

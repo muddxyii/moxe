@@ -4,7 +4,12 @@ type AgentSelection = { type: "agent"; id: string };
 type ShellSelection = { type: "shell"; owner: string; name: string };
 type Selection = AgentSelection | ShellSelection | null;
 
+export type Tab = { id: string; title: string; wsUrl: string };
+export type LocationKey = string; // "agent:{id}" | "shell:{owner}/{name}"
+
 let selection = $state<Selection>(null);
+const tabs = $state<Record<LocationKey, Tab[]>>({});
+const activeTabId = $state<Record<LocationKey, string>>({});
 
 const selectedAgent = $derived(() => {
 	if (selection?.type !== "agent") return null;
@@ -12,6 +17,11 @@ const selectedAgent = $derived(() => {
 	const store = getAgentStore();
 	return store.agents.find((a) => a.id === id) ?? null;
 });
+
+function locationKey(sel: NonNullable<Selection>): LocationKey {
+	if (sel.type === "agent") return `agent:${sel.id}`;
+	return `shell:${sel.owner}/${sel.name}`;
+}
 
 export function getSelectionStore() {
 	return {
@@ -24,6 +34,12 @@ export function getSelectionStore() {
 		get selectedAgent() {
 			return selectedAgent();
 		},
+		get tabs() {
+			return tabs;
+		},
+		get activeTabId() {
+			return activeTabId;
+		},
 		selectAgent(id: string) {
 			selection = { type: "agent", id };
 		},
@@ -32,6 +48,30 @@ export function getSelectionStore() {
 		},
 		clearSelection() {
 			selection = null;
+		},
+		locationKeyForSelection(sel: NonNullable<Selection>): LocationKey {
+			return locationKey(sel);
+		},
+		openTab(key: LocationKey, wsUrl: string, id = crypto.randomUUID()) {
+			const existing = tabs[key] ?? [];
+			const n = existing.length + 1;
+			const tab: Tab = { id, title: `Terminal ${n}`, wsUrl };
+			tabs[key] = [...existing, tab];
+			activeTabId[key] = tab.id;
+		},
+		closeTab(key: LocationKey, tabId: string) {
+			const existing = tabs[key] ?? [];
+			const idx = existing.findIndex((t) => t.id === tabId);
+			const next = existing.filter((t) => t.id !== tabId);
+			tabs[key] = next;
+			if (next.length === 0) {
+				delete activeTabId[key];
+			} else {
+				activeTabId[key] = next[Math.max(0, idx - 1)].id;
+			}
+		},
+		switchTab(key: LocationKey, tabId: string) {
+			activeTabId[key] = tabId;
 		},
 	};
 }

@@ -84,6 +84,15 @@ export function terminalWsUrl(agentId: string): string {
 	return `ws://localhost:3456/ws/terminal/${agentId}`;
 }
 
-export function shellWsUrl(owner: string, name: string): string {
-	return `ws://localhost:3456/ws/shell/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
+export function worktreeShellWsUrl(agentId: string, tabId: string): string {
+	return `ws://localhost:3456/ws/worktree-shell/${agentId}?tabId=${tabId}`;
+}
+
+export function shellWsUrl(
+	owner: string,
+	name: string,
+	tabId?: string,
+): string {
+	const base = `ws://localhost:3456/ws/shell/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`;
+	return tabId ? `${base}?tabId=${tabId}` : base;
 }
