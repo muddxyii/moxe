@@ -1,6 +1,12 @@
 <script lang="ts">
 import { toast } from "svelte-sonner";
-import { addRepo, createAgent, fetchIssues, fetchRepos } from "$lib/api";
+import {
+	addRepo,
+	createAgent,
+	fetchIssues,
+	fetchRepos,
+	pickRepoDirectory,
+} from "$lib/api";
 import { getAgentStore } from "$lib/stores/agents.svelte";
 import type { Issue, Repo } from "$lib/types";
 
@@ -24,6 +30,7 @@ let submitting = $state(false);
 let showAddRepo = $state(false);
 let newRepoPath = $state("");
 let addingRepo = $state(false);
+let pickingPath = $state(false);
 
 async function loadRepos() {
 	loadingRepos = true;
@@ -72,6 +79,18 @@ async function handleAddRepo() {
 		// toast shown by api client
 	} finally {
 		addingRepo = false;
+	}
+}
+
+async function handlePickRepoPath() {
+	pickingPath = true;
+	try {
+		const { path } = await pickRepoDirectory();
+		newRepoPath = path;
+	} catch {
+		// toast shown by api client
+	} finally {
+		pickingPath = false;
 	}
 }
 
@@ -164,7 +183,10 @@ $effect(() => {
 						{#if !showAddRepo}
 							<button
 								class="w-full rounded-md border border-dashed border-[var(--ctp-surface1)] px-3 py-2 text-sm text-[var(--ctp-subtext0)] transition-colors hover:border-[var(--ctp-surface2)] hover:text-[var(--ctp-text)]"
-								onclick={() => (showAddRepo = true)}
+								onclick={() => {
+									showAddRepo = true;
+									handlePickRepoPath();
+								}}
 							>
 								+ Add workspace
 							</button>
@@ -178,6 +200,13 @@ $effect(() => {
 									onkeydown={(e) => { if (e.key === "Enter") handleAddRepo(); }}
 								/>
 								<button
+									class="rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-xs text-[var(--ctp-subtext0)] hover:bg-[var(--ctp-surface1)] disabled:opacity-50"
+									onclick={handlePickRepoPath}
+									disabled={pickingPath}
+								>
+									{pickingPath ? "Picking..." : "Pick..."}
+								</button>
+								<button
 									class="rounded-md bg-[var(--ctp-blue)] px-3 py-2 text-xs font-medium text-[var(--ctp-crust)] transition-opacity hover:opacity-80 disabled:opacity-50"
 									onclick={handleAddRepo}
 									disabled={addingRepo || !newRepoPath.trim()}
@@ -186,7 +215,10 @@ $effect(() => {
 								</button>
 								<button
 									class="rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-xs text-[var(--ctp-subtext0)] hover:bg-[var(--ctp-surface1)]"
-									onclick={() => { showAddRepo = false; newRepoPath = ""; }}
+									onclick={() => {
+										showAddRepo = false;
+										newRepoPath = "";
+									}}
 								>
 									Cancel
 								</button>

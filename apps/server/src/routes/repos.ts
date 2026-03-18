@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { Hono } from "hono";
+import { pickDirectory } from "../services/system-picker.js";
 
 const REPOS_PATH = join(homedir(), ".moxe", "repos.json");
 
@@ -30,6 +31,15 @@ export const repos = new Hono();
 
 repos.get("/", (c) => {
 	return c.json(readRepos());
+});
+
+repos.post("/pick", async (c) => {
+	try {
+		const path = await pickDirectory();
+		return c.json({ path });
+	} catch {
+		return c.json({ error: "No folder selected" }, 400);
+	}
 });
 
 repos.post("/", async (c) => {

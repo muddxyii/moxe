@@ -60,6 +60,10 @@ export async function fetchRepos(): Promise<Repo[]> {
 	return request("/api/repos");
 }
 
+export async function pickRepoDirectory(): Promise<{ path: string }> {
+	return request("/api/repos/pick", { method: "POST" });
+}
+
 export async function addRepo(localPath: string): Promise<Repo> {
 	return request("/api/repos", {
 		method: "POST",
