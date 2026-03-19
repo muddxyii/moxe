@@ -7,10 +7,10 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "./schema/index";
 
-const moxeDir = join(homedir(), ".moxe");
-mkdirSync(moxeDir, { recursive: true });
+const moxieDir = join(homedir(), ".moxie");
+mkdirSync(moxieDir, { recursive: true });
 
-const dbPath = join(moxeDir, "moxe.db");
+const dbPath = join(moxieDir, "moxie.db");
 const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
 

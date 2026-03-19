@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-export const REPOS_PATH = join(homedir(), ".moxe", "repos.json");
+export const REPOS_PATH = join(homedir(), ".moxie", "repos.json");
 
 export interface RepoEntry {
 	owner: string;

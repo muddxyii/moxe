@@ -5,7 +5,7 @@ import { getSettingsStore } from "$lib/stores/settings.svelte";
 import { applyThemeCssVars, getThemeById } from "$lib/theme/themes";
 
 let { children } = $props();
-const appVersion = import.meta.env.PUBLIC_MOXE_VERSION;
+const appVersion = import.meta.env.PUBLIC_MOXIE_VERSION;
 const settingsStore = getSettingsStore();
 
 $effect(() => {
@@ -15,7 +15,7 @@ $effect(() => {
 </script>
 
 <svelte:head>
-	<title>moxe v{appVersion}</title>
+	<title>moxie v{appVersion}</title>
 </svelte:head>
 
 <Toaster

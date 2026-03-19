@@ -24,7 +24,7 @@ export function resolvePaths(
 	const branch = `feature/issue-${issueNumber}-${slug}-${prefix}`;
 	const worktreePath = join(
 		homedir(),
-		".moxe",
+		".moxie",
 		"worktrees",
 		`issue-${issueNumber}-${slug}-${prefix}`,
 	);

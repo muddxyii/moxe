@@ -2,7 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { agents, db, eq } from "@moxe/db";
+import { agents, db, eq } from "@moxie/db";
 import type { Hono } from "hono";
 import type { UpgradeWebSocket, WSContext } from "hono/ws";
 import { ptyManager } from "../services/pty.js";
@@ -43,7 +43,7 @@ export function registerWorktreeShellWs(
 					}
 
 					// Compute log path (needed for both spawn and backfill)
-					const logDir = join(homedir(), ".moxe", "shell-logs");
+					const logDir = join(homedir(), ".moxie", "shell-logs");
 					mkdirSync(logDir, { recursive: true });
 					const logPath = join(
 						logDir,

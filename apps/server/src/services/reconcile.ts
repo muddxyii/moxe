@@ -1,4 +1,4 @@
-import { agents, db } from "@moxe/db";
+import { agents, db } from "@moxie/db";
 import { appendEvent, getLatestEvent } from "./events.js";
 
 export async function reconcileStaleAgents(): Promise<void> {
@@ -35,7 +35,7 @@ export async function reconcileStaleAgents(): Promise<void> {
 		if (!processAlive) {
 			await appendEvent(agent.id, failEvent, { reason: "server_restart" });
 			console.log(
-				`[moxe] Marked agent ${agent.id} as failed (PID ${pid ?? "null"} not found after server restart)`,
+				`[moxie] Marked agent ${agent.id} as failed (PID ${pid ?? "null"} not found after server restart)`,
 			);
 		}
 	}

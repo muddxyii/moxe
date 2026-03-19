@@ -1,4 +1,4 @@
-# Moxe
+# Moxie
 
 Local-first agent orchestrator for running multiple Claude Code agents in parallel. Each agent works in its own git worktree, scoped to a GitHub Issue.
 
@@ -10,7 +10,7 @@ See `docs/spec.md` for the full spec.
 - **API**: Hono on port 3456
 - **Frontend**: SvelteKit (static adapter, served by Hono in production)
 - **ORM**: Drizzle with SQLite via better-sqlite3
-- **Database**: SQLite at `~/.moxe/moxe.db`
+- **Database**: SQLite at `~/.moxie/moxie.db`
 - **Terminal**: XTerm.js + node-pty over WebSocket
 - **GitHub**: gh CLI (no Octokit, no custom API client)
 - **Styling**: Tailwind + shadcn-svelte
@@ -19,7 +19,7 @@ See `docs/spec.md` for the full spec.
 ## Project structure
 
 ```
-moxe/
+moxie/
 ├── packages/db/          # Drizzle schema, client, migrations
 ├── apps/server/          # Hono API server
 └── apps/web/             # SvelteKit frontend
@@ -29,8 +29,8 @@ moxe/
 
 ```bash
 pnpm dev                           # Start all dev servers via Turbo
-pnpm --filter @moxe/server dev    # Start API server only (port 3456)
-pnpm --filter @moxe/web dev       # Start SvelteKit dev server only (port 5173)
+pnpm --filter @moxie/server dev    # Start API server only (port 3456)
+pnpm --filter @moxie/web dev       # Start SvelteKit dev server only (port 5173)
 pnpm build                         # Build all packages via Turbo
 pnpm lint                          # Lint with Biome
 pnpm lint:fix                      # Auto-fix lint issues
@@ -43,10 +43,10 @@ pnpm db:migrate                    # Run migrations
 ## Architecture
 
 - **Two DB tables**: `agents` and `events`. Agent status is derived from the latest event — never stored as a column.
-- **Event-driven state**: append-only `events` table. Use `deriveStatus()` from `@moxe/db` to get current status.
+- **Event-driven state**: append-only `events` table. Use `deriveStatus()` from `@moxie/db` to get current status.
 - **Auto-migration**: the db client runs migrations on import. No manual migration step needed during dev.
 - **Modular schema**: schema files live at `packages/db/src/schema/`. One file per table.
-- **Server imports from `@moxe/db` only**: never import `drizzle-orm` or `better-sqlite3` directly in server code. All query helpers (`eq`, `desc`, etc.) are re-exported from `@moxe/db`.
+- **Server imports from `@moxie/db` only**: never import `drizzle-orm` or `better-sqlite3` directly in server code. All query helpers (`eq`, `desc`, etc.) are re-exported from `@moxie/db`.
 
 ## DB schema
 
@@ -65,9 +65,9 @@ id, agentId, type, payload, ts
 - **Biome for linting and formatting** — no ESLint or Prettier. Tabs, recommended rules, `node:` protocol for Node builtins.
 - **Turbo for task orchestration** — `pnpm dev`, `pnpm build`, `pnpm typecheck` all go through Turbo.
 - **Shared TypeScript configs** in `tooling/typescript/` — `base.json` for apps, `internal-package.json` for packages.
-- **Port management**: each workspace gets 10 consecutive ports from `~/.moxe/port-allocations.json`. Offsets: +0 API, +1 Web, +2 DB, +3 Test, +4-9 reserved.
-- **Per-project config**: target repos have a `.moxe/` directory with `config.json`, `init.sh`, `cleanup.sh`, and optional `ports.json`.
-- **Global state**: `~/.moxe/` holds `moxe.db`, `port-allocations.json`, `worktrees/`, and optional `config.json`.
+- **Port management**: each workspace gets 10 consecutive ports from `~/.moxie/port-allocations.json`. Offsets: +0 API, +1 Web, +2 DB, +3 Test, +4-9 reserved.
+- **Per-project config**: target repos have a `.moxie/` directory with `config.json`, `init.sh`, `cleanup.sh`, and optional `ports.json`.
+- **Global state**: `~/.moxie/` holds `moxie.db`, `port-allocations.json`, `worktrees/`, and optional `config.json`.
 - **Terminal output**: written to `<worktree>/agent.log`, not stored in DB. Streamed live via WebSocket, backfilled from log file on reconnect.
 - **Killed agent branches**: preserved by default. Worktree removed from disk, branch stays for inspection.
 - **No run history**: re-running an issue creates a new agent row. Old row stays, old worktree is cleaned up.
@@ -75,7 +75,7 @@ id, agentId, type, payload, ts
 
 ## Environment variables for init/cleanup scripts
 
-MOXE_ISSUE_NUMBER, MOXE_ISSUE_TITLE, MOXE_BRANCH, MOXE_WORKTREE_PATH, MOXE_ROOT_PATH, MOXE_WORKSPACE_NAME, MOXE_PORT_BASE, MOXE_PORT_API, MOXE_PORT_WEB, MOXE_PORT_DB
+MOXIE_ISSUE_NUMBER, MOXIE_ISSUE_TITLE, MOXIE_BRANCH, MOXIE_WORKTREE_PATH, MOXIE_ROOT_PATH, MOXIE_WORKSPACE_NAME, MOXIE_PORT_BASE, MOXIE_PORT_API, MOXIE_PORT_WEB, MOXIE_PORT_DB
 
 ## Conventions
 

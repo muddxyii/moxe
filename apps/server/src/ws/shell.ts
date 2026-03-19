@@ -37,7 +37,7 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 					}
 
 					// Compute log path (needed for both spawn and backfill)
-					const logDir = join(homedir(), ".moxe", "shell-logs");
+					const logDir = join(homedir(), ".moxie", "shell-logs");
 					mkdirSync(logDir, { recursive: true });
 					const logPath = join(
 						logDir,

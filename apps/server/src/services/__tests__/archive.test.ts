@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => {
 		issueTitle: "Test issue",
 		issueBody: "Fix the bug",
 		branch: "feature/issue-42-test-issue-abc1234",
-		worktreePath: "/tmp/moxe-worktrees/issue-42-test-issue-abc1234",
-		logPath: "/tmp/moxe-worktrees/issue-42-test-issue-abc1234/agent.log",
+		worktreePath: "/tmp/moxie-worktrees/issue-42-test-issue-abc1234",
+		logPath: "/tmp/moxie-worktrees/issue-42-test-issue-abc1234/agent.log",
 		pid: 12345,
 		portBase: 4000,
 		createdAt: "2026-01-01T00:00:00.000Z",
@@ -96,7 +96,7 @@ vi.mock("node:child_process", () => ({
 	execFile: vi.fn(),
 }));
 
-vi.mock("@moxe/db", () => {
+vi.mock("@moxie/db", () => {
 	const makeSelectChain = () => {
 		// biome-ignore lint/suspicious/noExplicitAny: mock chain requires self-reference
 		const chain: any = {};
@@ -160,7 +160,7 @@ describe("agent archive", () => {
 
 		expect(mocks.removeWorktree).toHaveBeenCalledWith(
 			"/tmp/repo",
-			"/tmp/moxe-worktrees/issue-42-test-issue-abc1234",
+			"/tmp/moxie-worktrees/issue-42-test-issue-abc1234",
 			"feature/issue-42-test-issue-abc1234",
 			false,
 		);

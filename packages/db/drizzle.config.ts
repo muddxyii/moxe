@@ -7,6 +7,6 @@ export default defineConfig({
 	out: "./drizzle",
 	dialect: "sqlite",
 	dbCredentials: {
-		url: join(homedir(), ".moxe", "moxe.db"),
+		url: join(homedir(), ".moxie", "moxie.db"),
 	},
 });

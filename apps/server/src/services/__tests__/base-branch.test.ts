@@ -15,7 +15,7 @@ async function createTempGitRepo(options: {
 	remoteHead?: string | null;
 	localBranches?: string[];
 }): Promise<string> {
-	const dir = mkdtempSync(join(tmpdir(), "moxe-test-"));
+	const dir = mkdtempSync(join(tmpdir(), "moxie-test-"));
 	tempDirs.push(dir);
 
 	const defaultBranch = options.localBranches?.[0] ?? "orphan";
@@ -38,17 +38,17 @@ async function createTempGitRepo(options: {
 		}
 	}
 
-	// Write .moxe/config.json if provided
+	// Write .moxie/config.json if provided
 	if (options.config) {
-		const moxeDir = join(dir, ".moxe");
-		mkdirSync(moxeDir, { recursive: true });
-		writeFileSync(join(moxeDir, "config.json"), JSON.stringify(options.config));
+		const moxieDir = join(dir, ".moxie");
+		mkdirSync(moxieDir, { recursive: true });
+		writeFileSync(join(moxieDir, "config.json"), JSON.stringify(options.config));
 	}
 
 	// Set up fake remote HEAD if provided
 	if (options.remoteHead) {
 		// Create a bare clone to act as a remote
-		const remoteDir = mkdtempSync(join(tmpdir(), "moxe-remote-"));
+		const remoteDir = mkdtempSync(join(tmpdir(), "moxie-remote-"));
 		tempDirs.push(remoteDir);
 		await execFile("git", ["clone", "--bare", dir, remoteDir]);
 		await execFile("git", ["remote", "add", "origin", remoteDir], {
@@ -82,7 +82,7 @@ afterEach(() => {
 });
 
 describe("resolveBaseBranch", () => {
-	it("prefers configured baseBranch from .moxe/config.json", async () => {
+	it("prefers configured baseBranch from .moxie/config.json", async () => {
 		const repoPath = await createTempGitRepo({
 			config: { baseBranch: "develop" },
 			localBranches: ["main", "master"],

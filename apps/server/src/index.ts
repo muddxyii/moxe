@@ -16,7 +16,7 @@ import { registerShellWs } from "./ws/shell.js";
 import { registerTerminalWs } from "./ws/terminal.js";
 import { registerWorktreeShellWs } from "./ws/worktree-shell.js";
 
-const CLEAN_SHUTDOWN_MARKER = join(homedir(), ".moxe", "clean-shutdown");
+const CLEAN_SHUTDOWN_MARKER = join(homedir(), ".moxie", "clean-shutdown");
 
 const app = new Hono();
 
@@ -37,13 +37,13 @@ try {
 	execSync(`${shell} -lc 'which claude'`, { stdio: "ignore" });
 } catch {
 	console.warn(
-		"[moxe] Warning: 'claude' not found in PATH. Install Claude Code before launching agents.",
+		"[moxie] Warning: 'claude' not found in PATH. Install Claude Code before launching agents.",
 	);
 }
 
 // Reclaim ports from previous crashed/finished agents
 reclaimStalePorts().catch((err) => {
-	console.warn("[moxe] Port reclaim failed:", err);
+	console.warn("[moxie] Port reclaim failed:", err);
 });
 
 // Reconcile agents only after a crash — skip if previous shutdown was clean
@@ -51,17 +51,17 @@ if (existsSync(CLEAN_SHUTDOWN_MARKER)) {
 	rmSync(CLEAN_SHUTDOWN_MARKER);
 } else {
 	reconcileStaleAgents().catch((err) => {
-		console.warn("[moxe] Agent reconciliation failed:", err);
+		console.warn("[moxie] Agent reconciliation failed:", err);
 	});
 }
 
 const port = 3456;
-console.log(`Moxe server running on http://localhost:${port}`);
+console.log(`Moxie server running on http://localhost:${port}`);
 const server = serve({ fetch: app.fetch, port });
 injectWebSocket(server);
 
 const shutdown = async () => {
-	console.log("\n[moxe] Shutting down, cleaning up PTY processes...");
+	console.log("\n[moxie] Shutting down, cleaning up PTY processes...");
 	try {
 		writeFileSync(CLEAN_SHUTDOWN_MARKER, "");
 	} catch {

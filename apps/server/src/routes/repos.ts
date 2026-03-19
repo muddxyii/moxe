@@ -14,7 +14,7 @@ import { inspectRepoPath } from "../services/repo-inspector.js";
 import { pickDirectory } from "../services/system-picker.js";
 
 function writeRepos(repos: RepoEntry[]) {
-	const dir = join(homedir(), ".moxe");
+	const dir = join(homedir(), ".moxie");
 	if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 	writeFileSync(REPOS_PATH, JSON.stringify(repos, null, "\t"));
 }
@@ -90,9 +90,9 @@ repos.get("/:owner/:name/config", (c) => {
 	}
 
 	const repoPath = repo.localPath;
-	const moxeDir = join(repoPath, ".moxe");
-	const configPath = join(moxeDir, "config.json");
-	const hasMoxeDir = existsSync(moxeDir);
+	const moxieDir = join(repoPath, ".moxie");
+	const configPath = join(moxieDir, "config.json");
+	const hasMoxieDir = existsSync(moxieDir);
 	const hasConfig = existsSync(configPath);
 
 	let config: Record<string, unknown> = {};
@@ -112,7 +112,7 @@ repos.get("/:owner/:name/config", (c) => {
 			typeof config[key] === "string" ? (config[key] as string) : null;
 		const scriptPath = configured
 			? resolvePath(repoPath, configured)
-			: join(moxeDir, fallbackName);
+			: join(moxieDir, fallbackName);
 		if (!existsSync(scriptPath)) {
 			return { exists: false, executable: false, path: null };
 		}
@@ -132,8 +132,8 @@ repos.get("/:owner/:name/config", (c) => {
 		typeof config.baseBranch === "string" ? config.baseBranch : null;
 
 	return c.json({
-		configured: hasMoxeDir && hasConfig,
-		hasMoxeDir,
+		configured: hasMoxieDir && hasConfig,
+		hasMoxieDir,
 		hasConfig,
 		init,
 		cleanup,

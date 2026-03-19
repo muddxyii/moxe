@@ -10,7 +10,7 @@ type SessionRecord = {
 
 type SessionFile = Record<string, SessionRecord>;
 
-const SESSION_FILE = join(homedir(), ".moxe", "shell-sessions.json");
+const SESSION_FILE = join(homedir(), ".moxie", "shell-sessions.json");
 
 class SessionStore {
 	private data: SessionFile = {};

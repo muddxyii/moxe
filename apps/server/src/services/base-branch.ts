@@ -5,13 +5,13 @@ import { promisify } from "node:util";
 
 const execFile = promisify(execFileCb);
 
-interface RepoMoxeConfig {
+interface RepoMoxieConfig {
 	baseBranch?: string;
 }
 
-function readRepoConfig(repoPath: string): RepoMoxeConfig {
+function readRepoConfig(repoPath: string): RepoMoxieConfig {
 	try {
-		const text = readFileSync(join(repoPath, ".moxe", "config.json"), "utf-8");
+		const text = readFileSync(join(repoPath, ".moxie", "config.json"), "utf-8");
 		const raw = JSON.parse(text) as Record<string, unknown>;
 		return {
 			baseBranch:

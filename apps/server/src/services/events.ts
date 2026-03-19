@@ -1,5 +1,5 @@
-import type { AgentStatus, EventType } from "@moxe/db";
-import { asc, db, deriveStatus, desc, eq, events, nanoid } from "@moxe/db";
+import type { AgentStatus, EventType } from "@moxie/db";
+import { asc, db, deriveStatus, desc, eq, events, nanoid } from "@moxie/db";
 
 export async function appendEvent(
 	agentId: string,

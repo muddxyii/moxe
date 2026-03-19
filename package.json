@@ -1,5 +1,5 @@
 {
-	"name": "@moxe/repo",
+	"name": "@moxie/repo",
 	"version": "0.1.0-alpha.1",
 	"private": true,
 	"type": "module",
@@ -14,8 +14,8 @@
 		"test": "turbo test",
 		"clean": "git clean -xdf node_modules",
 		"clean:workspaces": "turbo clean",
-		"db:generate": "pnpm --filter @moxe/db generate",
-		"db:migrate": "pnpm --filter @moxe/db migrate"
+		"db:generate": "pnpm --filter @moxie/db generate",
+		"db:migrate": "pnpm --filter @moxie/db migrate"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

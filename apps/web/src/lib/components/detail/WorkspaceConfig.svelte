@@ -1,5 +1,5 @@
 <script lang="ts">
-import { buildMoxeSetupPrompt } from "$lib/ai-setup";
+import { buildMoxieSetupPrompt } from "$lib/ai-setup";
 import { fetchWorkspaceConfig, shellWsUrl } from "$lib/api";
 import { getSelectionStore } from "$lib/stores/selection.svelte";
 import type { WorkspaceConfig } from "$lib/types";
@@ -50,7 +50,7 @@ function launchWithAgent(agent: "claude" | "codex" | "gemini") {
 	const locationKey = `shell:${owner}/${name}`;
 	const tabId = crypto.randomUUID();
 	const wsUrl = shellWsUrl(owner, name, tabId);
-	const prompt = buildMoxeSetupPrompt(owner, name);
+	const prompt = buildMoxieSetupPrompt(owner, name);
 	const command = buildAgentCommand(agent, prompt, tabId);
 	selectionStore.openTab(locationKey, wsUrl, tabId, {
 		title: agentLabel(agent),
@@ -74,7 +74,7 @@ function buildAgentCommand(
 	prompt: string,
 	randomId: string,
 ): string {
-	const delimiter = `MOXE_SETUP_${randomId.replaceAll("-", "")}`;
+	const delimiter = `MOXIE_SETUP_${randomId.replaceAll("-", "")}`;
 	switch (agent) {
 		case "claude":
 			return `claude "$(cat <<'${delimiter}'\n${prompt}\n${delimiter}\n)"`;
@@ -113,12 +113,12 @@ function handleClickOutside(event: MouseEvent) {
 			<h3
 				class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--ctp-subtext0)]"
 			>
-				Moxe Configuration
+				Moxie Configuration
 			</h3>
 
 			<div class="space-y-2">
 				<div class="flex items-center gap-2">
-					{#if config.hasMoxeDir}
+					{#if config.hasMoxieDir}
 						<span class="text-[var(--ctp-green)]">
 							<svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg>
 						</span>
@@ -127,7 +127,7 @@ function handleClickOutside(event: MouseEvent) {
 							<svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"/></svg>
 						</span>
 					{/if}
-					<span class="text-sm text-[var(--ctp-text)]">.moxe/ directory</span>
+					<span class="text-sm text-[var(--ctp-text)]">.moxie/ directory</span>
 				</div>
 
 				<div class="flex items-center gap-2">

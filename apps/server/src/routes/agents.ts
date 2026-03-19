@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
-import type { EventType } from "@moxe/db";
-import { agents, db, deriveStatus, desc, eq, events } from "@moxe/db";
+import type { EventType } from "@moxie/db";
+import { agents, db, deriveStatus, desc, eq, events } from "@moxie/db";
 import { Hono } from "hono";
 import { archiveAgent } from "../services/archive.js";
 import { resolveBaseBranch } from "../services/base-branch.js";

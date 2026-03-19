@@ -88,9 +88,9 @@ Node + Hono Server
      |  child_process — git, gh CLI, init/cleanup scripts
      v
 Filesystem
-     |  SQLite DB — ~/.moxe/moxe.db
-     |  Port registry — ~/.moxe/port-allocations.json
-     |  Worktrees — ~/.moxe/worktrees/<workspace-name>/
+     |  SQLite DB — ~/.moxie/moxie.db
+     |  Port registry — ~/.moxie/port-allocations.json
+     |  Worktrees — ~/.moxie/worktrees/<workspace-name>/
      |  Logs — <worktree>/agent.log
 ```
 
@@ -201,7 +201,7 @@ killed → cleanup_start → cleanup_done
 ```
 
 - **queued** — agent is queued for launch
-- **worktree_created** — `git worktree add` creates an isolated branch at `~/.moxe/worktrees/<workspace-name>`
+- **worktree_created** — `git worktree add` creates an isolated branch at `~/.moxie/worktrees/<workspace-name>`
 - **ports_allocated** — port block reserved from `port-allocations.json`
 - **init_start/done** — init.sh runs inside the new worktree
 - **agent_start/done** — Claude Code spawns with the issue as context, PTY streams to XTerm.js
@@ -279,13 +279,13 @@ claude --print "Fix the following GitHub issue:\n\nTitle: <title>\n\n<body>"
 
 ## 7. Per-Project Configuration
 
-### The `.moxe/` directory
+### The `.moxie/` directory
 
-Each project that uses Moxe has a `.moxe/` directory at its repository root. This is how Moxe discovers and configures projects — if `.moxe/config.json` exists, the repo is Moxe-enabled.
+Each project that uses Moxie has a `.moxie/` directory at its repository root. This is how Moxie discovers and configures projects — if `.moxie/config.json` exists, the repo is Moxie-enabled.
 
 ```
 your-project/
-├── .moxe/
+├── .moxie/
 │   ├── config.json          # Project configuration
 │   ├── ports.json           # Per-project port definitions (optional)
 │   ├── init.sh             # Init entry point
@@ -300,8 +300,8 @@ your-project/
 
 ```json
 {
-  "init": "./.moxe/init.sh",
-  "cleanup": "./.moxe/cleanup.sh"
+  "init": "./.moxie/init.sh",
+  "cleanup": "./.moxie/cleanup.sh"
 }
 ```
 
@@ -320,15 +320,15 @@ Per-project port definitions. Each worktree gets these ports allocated from the 
 ]
 ```
 
-Port values are offsets from the allocated base. If no `ports.json` exists, Moxe uses the default offsets (API +0, Web +1, DB +2).
+Port values are offsets from the allocated base. If no `ports.json` exists, Moxie uses the default offsets (API +0, Web +1, DB +2).
 
 ### Global state
 
-Moxe's own state lives at `~/.moxe/`:
+Moxie's own state lives at `~/.moxie/`:
 
 ```
-~/.moxe/
-├── moxe.db                       # SQLite database
+~/.moxie/
+├── moxie.db                       # SQLite database
 ├── port-allocations.json         # Port registry with file locking
 ├── worktrees/                    # All worktrees live here
 │   ├── issue-42-add-auth/
@@ -337,7 +337,7 @@ Moxe's own state lives at `~/.moxe/`:
 └── config.json                   # Global settings (optional)
 ```
 
-Global `~/.moxe/config.json` (optional overrides):
+Global `~/.moxie/config.json` (optional overrides):
 
 ```json
 {
@@ -351,18 +351,18 @@ Global `~/.moxe/config.json` (optional overrides):
 
 | Variable | Value |
 |---|---|
-| MOXE_ISSUE_NUMBER | GitHub issue number |
-| MOXE_ISSUE_TITLE | GitHub issue title |
-| MOXE_BRANCH | Branch name for this worktree |
-| MOXE_WORKTREE_PATH | Absolute path to the worktree |
-| MOXE_ROOT_PATH | Absolute path to the main repo |
-| MOXE_WORKSPACE_NAME | Normalized workspace identifier (e.g. `issue-42-add-auth`) |
-| MOXE_PORT_BASE | First port in the allocated block (e.g. `4000`) |
-| MOXE_PORT_API | Port base + 0 (convenience) |
-| MOXE_PORT_WEB | Port base + 1 (convenience) |
-| MOXE_PORT_DB | Port base + 2 (convenience) |
+| MOXIE_ISSUE_NUMBER | GitHub issue number |
+| MOXIE_ISSUE_TITLE | GitHub issue title |
+| MOXIE_BRANCH | Branch name for this worktree |
+| MOXIE_WORKTREE_PATH | Absolute path to the worktree |
+| MOXIE_ROOT_PATH | Absolute path to the main repo |
+| MOXIE_WORKSPACE_NAME | Normalized workspace identifier (e.g. `issue-42-add-auth`) |
+| MOXIE_PORT_BASE | First port in the allocated block (e.g. `4000`) |
+| MOXIE_PORT_API | Port base + 0 (convenience) |
+| MOXIE_PORT_WEB | Port base + 1 (convenience) |
+| MOXIE_PORT_DB | Port base + 2 (convenience) |
 
-`MOXE_WORKSPACE_NAME` is derived from the branch name, normalized to lowercase alphanumeric with hyphens, max 32 chars. Useful for naming containers, database branches, or port allocations in init scripts.
+`MOXIE_WORKSPACE_NAME` is derived from the branch name, normalized to lowercase alphanumeric with hyphens, max 32 chars. Useful for naming containers, database branches, or port allocations in init scripts.
 
 ### Execution rules
 
@@ -372,7 +372,7 @@ Global `~/.moxe/config.json` (optional overrides):
 - stdout and stderr are captured and shown in the run log
 - A non-zero exit from init aborts the agent → `init_failed` event
 - A non-zero exit from cleanup is logged but does not affect agent status
-- Scripts must be executable (`chmod +x`). Moxe checks this at agent start and warns if not.
+- Scripts must be executable (`chmod +x`). Moxie checks this at agent start and warns if not.
 
 ## 8. Port Management
 
@@ -380,7 +380,7 @@ Each workspace gets isolated ports so multiple agents can run full-stack environ
 
 ### Allocation model
 
-Each workspace gets a block of 10 consecutive ports from a base (default: 4000). Allocations are tracked in `~/.moxe/port-allocations.json` with file-based locking to prevent races between concurrent agent startups.
+Each workspace gets a block of 10 consecutive ports from a base (default: 4000). Allocations are tracked in `~/.moxie/port-allocations.json` with file-based locking to prevent races between concurrent agent startups.
 
 ```
 Workspace A: ports 4000–4009
@@ -417,7 +417,7 @@ Projects define which offsets they use. The convention is a suggestion — init 
 Port allocation uses `mkdir`-based locking. `mkdir` is atomic on POSIX — if the directory already exists, the call fails, acting as a mutex.
 
 ```bash
-LOCK_DIR="$HOME/.moxe/.port-lock"
+LOCK_DIR="$HOME/.moxie/.port-lock"
 
 acquire_lock() {
   while ! mkdir "$LOCK_DIR" 2>/dev/null; do sleep 0.1; done
@@ -428,7 +428,7 @@ release_lock() {
 }
 ```
 
-Moxe handles allocation in the server before init scripts run. The allocated port base is passed via environment variables.
+Moxie handles allocation in the server before init scripts run. The allocated port base is passed via environment variables.
 
 ### Database isolation
 
@@ -437,28 +437,28 @@ For projects that need a database per workspace, init scripts should:
 1. **Start an isolated container** named after the workspace:
    ```bash
    docker run -d \
-     --name "moxe-pg-${MOXE_WORKSPACE_NAME}" \
-     -p "${MOXE_PORT_DB}:5432" \
-     -e POSTGRES_DB="myapp_${MOXE_WORKSPACE_NAME}" \
+     --name "moxie-pg-${MOXIE_WORKSPACE_NAME}" \
+     -p "${MOXIE_PORT_DB}:5432" \
+     -e POSTGRES_DB="myapp_${MOXIE_WORKSPACE_NAME}" \
      -e POSTGRES_PASSWORD=dev \
      postgres:16-alpine
    ```
 
 2. **Wait for readiness** before running migrations:
    ```bash
-   until pg_isready -h localhost -p "${MOXE_PORT_DB}" -q; do sleep 0.5; done
+   until pg_isready -h localhost -p "${MOXIE_PORT_DB}" -q; do sleep 0.5; done
    ```
 
 3. **Run migrations** against the workspace-specific URL:
    ```bash
-   DATABASE_URL="postgresql://postgres:dev@localhost:${MOXE_PORT_DB}/myapp_${MOXE_WORKSPACE_NAME}" \
+   DATABASE_URL="postgresql://postgres:dev@localhost:${MOXIE_PORT_DB}/myapp_${MOXIE_WORKSPACE_NAME}" \
      npm run db:migrate
    ```
 
 Teardown stops and removes the container:
 ```bash
-docker stop "moxe-pg-${MOXE_WORKSPACE_NAME}" 2>/dev/null || true
-docker rm "moxe-pg-${MOXE_WORKSPACE_NAME}" 2>/dev/null || true
+docker stop "moxie-pg-${MOXIE_WORKSPACE_NAME}" 2>/dev/null || true
+docker rm "moxie-pg-${MOXIE_WORKSPACE_NAME}" 2>/dev/null || true
 ```
 
 ### .env generation
@@ -467,43 +467,43 @@ Setup scripts write workspace-specific `.env` files using the allocated ports:
 
 ```bash
 cat > .env <<EOF
-PORT=${MOXE_PORT_API}
-DATABASE_URL=postgresql://postgres:dev@localhost:${MOXE_PORT_DB}/myapp_${MOXE_WORKSPACE_NAME}
-WEB_URL=http://localhost:${MOXE_PORT_WEB}
+PORT=${MOXIE_PORT_API}
+DATABASE_URL=postgresql://postgres:dev@localhost:${MOXIE_PORT_DB}/myapp_${MOXIE_WORKSPACE_NAME}
+WEB_URL=http://localhost:${MOXIE_PORT_WEB}
 EOF
 
 # For Vite projects that read from their own root
 cat > packages/web/.env <<EOF
-VITE_API_URL=http://localhost:${MOXE_PORT_API}
-VITE_PORT=${MOXE_PORT_WEB}
+VITE_API_URL=http://localhost:${MOXIE_PORT_API}
+VITE_PORT=${MOXIE_PORT_WEB}
 EOF
 ```
 
 ### Shared services
 
-Some services (like MinIO/S3) can be shared across workspaces on fixed ports. These should be started once (not per-workspace) and referenced in init scripts. Moxe doesn't manage shared services — that's left to the project's init scripts.
+Some services (like MinIO/S3) can be shared across workspaces on fixed ports. These should be started once (not per-workspace) and referenced in init scripts. Moxie doesn't manage shared services — that's left to the project's init scripts.
 
 ### Cleanup
 
 - Teardown deallocates the port block from `port-allocations.json`
-- On startup, Moxe scans for stale allocations (agent no longer exists) and reclaims them
+- On startup, Moxie scans for stale allocations (agent no longer exists) and reclaims them
 - Ports are also reclaimed when an agent is killed
 
 ## 9. Mobile Access (post-MVP)
 
 ### Approach
 
-Inspired by [yepanywhere](https://github.com/kzahel/yepanywhere). Instead of building a responsive mobile UI (terminals are unusable on phones), Moxe will provide remote monitoring and control via an encrypted relay.
+Inspired by [yepanywhere](https://github.com/kzahel/yepanywhere). Instead of building a responsive mobile UI (terminals are unusable on phones), Moxie will provide remote monitoring and control via an encrypted relay.
 
 ### How it works
 
 ```
-Phone browser ←→ Encrypted relay ←→ Moxe server (your machine)
+Phone browser ←→ Encrypted relay ←→ Moxie server (your machine)
                  (SRP-6a + NaCl)
 ```
 
 - **End-to-end encrypted** — the relay server cannot read your data
-- **No accounts** — pairing via QR code or one-time code displayed in the Moxe UI
+- **No accounts** — pairing via QR code or one-time code displayed in the Moxie UI
 - **Agent keeps running** when you disconnect — processes are server-side
 - **Push notifications** via browser Push API when an agent finishes, fails, or needs approval
 
@@ -517,7 +517,7 @@ Phone browser ←→ Encrypted relay ←→ Moxe server (your machine)
 
 ### Self-hosted alternative
 
-- Tailscale: expose Moxe's port to your tailnet, access from phone via Tailscale IP
+- Tailscale: expose Moxie's port to your tailnet, access from phone via Tailscale IP
 - Caddy: reverse proxy with automatic SSL for a custom domain
 
 ### MVP scope
@@ -527,7 +527,7 @@ Mobile access is post-MVP. The architecture supports it (WebSocket-based transpo
 ## 10. Project structure
 
 ```
-moxe/
+moxie/
 ├── package.json
 ├── pnpm-workspace.yaml
 ├── packages/
@@ -572,7 +572,7 @@ moxe/
 
 Monorepo with pnpm workspaces. The `db` package is shared between server and (potentially) any future packages. The server and web app are separate packages under `apps/`.
 
-Per-project config (`.moxe/`) lives in the user's target repo, not in this monorepo.
+Per-project config (`.moxie/`) lives in the user's target repo, not in this monorepo.
 
 ## 11. Build Plan
 
@@ -582,7 +582,7 @@ Iterative — each phase produces something usable.
 |---|---|
 | 1 — Skeleton | pnpm monorepo, Drizzle schema + migrations, Hono server serving a hello world, SvelteKit app building to static |
 | 2 — Core loop | node-pty spawning Claude Code, WebSocket streaming to XTerm.js in browser, agent row created in DB, events appended as lifecycle progresses |
-| 3 — Git worktrees | `git worktree add/remove` into `~/.moxe/worktrees/`, branch naming, worktree cleanup on kill/failure |
+| 3 — Git worktrees | `git worktree add/remove` into `~/.moxie/worktrees/`, branch naming, worktree cleanup on kill/failure |
 | 4 — Port management | Port allocation service, `port-allocations.json`, locking, env var injection, stale allocation cleanup on startup |
 | 5 — GitHub integration | `gh issue list` in new agent modal, issue passed as context, `gh pr create` + `gh issue close` on completion |
 | 6 — Init / cleanup | Config file parsing, script execution with env vars (including ports), timeout handling, output captured to log |
@@ -619,7 +619,7 @@ Iterative — each phase produces something usable.
 | Killed agent branch cleanup | **Preserved by default**. Worktree removed from disk, branch stays for inspection. Opt-in deletion flag in the UI. |
 | maxParallel | **No limit**. Each agent gets its own worktree, no throttling. |
 | Diff viewer editing | **Inline editing**. Pencil icon toggles read-only ↔ edit mode in the diff view. |
-| Port range config | **Per-project** via `.moxe/ports.json`. Each worktree can define port entries. Global fallback via `~/.moxe/config.json`. |
+| Port range config | **Per-project** via `.moxie/ports.json`. Each worktree can define port entries. Global fallback via `~/.moxie/config.json`. |
 
 ### PR body format
 

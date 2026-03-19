@@ -30,7 +30,7 @@ function locationKey(sel: NonNullable<Selection>): LocationKey {
 
 function loadTabsFromStorage(key: LocationKey): Tab[] {
 	try {
-		const raw = localStorage.getItem(`moxe:tabs:${key}`);
+		const raw = localStorage.getItem(`moxie:tabs:${key}`);
 		return raw ? (JSON.parse(raw) as Tab[]) : [];
 	} catch {
 		return [];
@@ -39,7 +39,7 @@ function loadTabsFromStorage(key: LocationKey): Tab[] {
 
 function loadActiveTabFromStorage(key: LocationKey): string | undefined {
 	try {
-		return localStorage.getItem(`moxe:activeTab:${key}`) ?? undefined;
+		return localStorage.getItem(`moxie:activeTab:${key}`) ?? undefined;
 	} catch {
 		return undefined;
 	}
@@ -51,11 +51,11 @@ function persistTabs(
 	activeId: string | undefined,
 ) {
 	try {
-		localStorage.setItem(`moxe:tabs:${key}`, JSON.stringify(tabList));
+		localStorage.setItem(`moxie:tabs:${key}`, JSON.stringify(tabList));
 		if (activeId) {
-			localStorage.setItem(`moxe:activeTab:${key}`, activeId);
+			localStorage.setItem(`moxie:activeTab:${key}`, activeId);
 		} else {
-			localStorage.removeItem(`moxe:activeTab:${key}`);
+			localStorage.removeItem(`moxie:activeTab:${key}`);
 		}
 	} catch {
 		// localStorage may be unavailable (SSR, private browsing quota)
@@ -64,8 +64,8 @@ function persistTabs(
 
 function clearTabsFromStorage(key: LocationKey) {
 	try {
-		localStorage.removeItem(`moxe:tabs:${key}`);
-		localStorage.removeItem(`moxe:activeTab:${key}`);
+		localStorage.removeItem(`moxie:tabs:${key}`);
+		localStorage.removeItem(`moxie:activeTab:${key}`);
 	} catch {
 		// ignore
 	}

@@ -92,7 +92,7 @@ export interface ScriptStatus {
 
 export interface WorkspaceConfig {
 	configured: boolean;
-	hasMoxeDir: boolean;
+	hasMoxieDir: boolean;
 	hasConfig: boolean;
 	init: ScriptStatus;
 	cleanup: ScriptStatus;

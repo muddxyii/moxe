@@ -7,11 +7,11 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { agents, db, eq } from "@moxe/db";
+import { agents, db, eq } from "@moxie/db";
 
-const MOXE_DIR = join(homedir(), ".moxe");
-const ALLOCATIONS_PATH = join(MOXE_DIR, "port-allocations.json");
-const LOCK_DIR = join(MOXE_DIR, ".port-lock");
+const MOXIE_DIR = join(homedir(), ".moxie");
+const ALLOCATIONS_PATH = join(MOXIE_DIR, "port-allocations.json");
+const LOCK_DIR = join(MOXIE_DIR, ".port-lock");
 
 interface Allocation {
 	base: number;
@@ -32,7 +32,7 @@ export interface GlobalConfig {
 
 export function readGlobalConfig(): GlobalConfig {
 	try {
-		const raw = readFileSync(join(MOXE_DIR, "config.json"), "utf-8");
+		const raw = readFileSync(join(MOXIE_DIR, "config.json"), "utf-8");
 		const parsed = JSON.parse(raw) as Partial<GlobalConfig>;
 		return {
 			portRangeStart: parsed.portRangeStart ?? 4000,
@@ -60,7 +60,7 @@ function readAllocations(): AllocationsFile {
 }
 
 function writeAllocations(data: AllocationsFile): void {
-	mkdirSync(MOXE_DIR, { recursive: true });
+	mkdirSync(MOXIE_DIR, { recursive: true });
 	writeFileSync(ALLOCATIONS_PATH, JSON.stringify(data, null, 2));
 }
 

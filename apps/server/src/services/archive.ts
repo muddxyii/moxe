@@ -7,7 +7,7 @@ import {
 	readFileSync,
 } from "node:fs";
 import { basename, join, resolve as resolvePath } from "node:path";
-import { agents, db, eq, events } from "@moxe/db";
+import { agents, db, eq, events } from "@moxie/db";
 import { appendEvent, getStatus } from "./events.js";
 import { deallocatePorts, readGlobalConfig } from "./ports.js";
 import { ptyManager } from "./pty.js";
@@ -25,13 +25,13 @@ const ARCHIVABLE_STATUSES = new Set([
 ]);
 
 // ---------------------------------------------------------------------------
-// Config — reads cleanup script from .moxe/config.json
+// Config — reads cleanup script from .moxie/config.json
 // ---------------------------------------------------------------------------
 
 function readCleanupScript(repoPath: string): string | null {
 	let raw: Record<string, unknown> = {};
 	try {
-		const text = readFileSync(join(repoPath, ".moxe", "config.json"), "utf-8");
+		const text = readFileSync(join(repoPath, ".moxie", "config.json"), "utf-8");
 		raw = JSON.parse(text) as Record<string, unknown>;
 	} catch {
 		// No config — no cleanup
@@ -41,13 +41,13 @@ function readCleanupScript(repoPath: string): string | null {
 		typeof raw.cleanup === "string" ? (raw.cleanup as string) : null;
 	const scriptPath = configured
 		? resolvePath(repoPath, configured)
-		: join(repoPath, ".moxe", "cleanup.sh");
+		: join(repoPath, ".moxie", "cleanup.sh");
 
 	if (!existsSync(scriptPath)) return null;
 	try {
 		accessSync(scriptPath, constants.X_OK);
 	} catch {
-		console.warn(`[moxe] Warning: ${scriptPath} exists but is not executable`);
+		console.warn(`[moxie] Warning: ${scriptPath} exists but is not executable`);
 	}
 	return scriptPath;
 }
@@ -79,7 +79,7 @@ async function runScript(
 		const timer = setTimeout(() => {
 			if (settled) return;
 			logStream.write(
-				`\n[moxe] Script timed out after ${timeoutMs}ms, sending SIGTERM\n`,
+				`\n[moxie] Script timed out after ${timeoutMs}ms, sending SIGTERM\n`,
 			);
 			child.kill("SIGTERM");
 			setTimeout(() => {
@@ -98,7 +98,7 @@ async function runScript(
 			if (settled) return;
 			settled = true;
 			clearTimeout(timer);
-			logStream.write(`\n[moxe] Script error: ${err.message}\n`);
+			logStream.write(`\n[moxie] Script error: ${err.message}\n`);
 			logStream.end(() => resolve({ exitCode: 1 }));
 		});
 	});
@@ -108,7 +108,7 @@ async function runScript(
 // Env helper
 // ---------------------------------------------------------------------------
 
-function buildMoxeEnv(agent: {
+function buildMoxieEnv(agent: {
 	issueNumber: number;
 	issueTitle: string;
 	branch: string;
@@ -118,16 +118,16 @@ function buildMoxeEnv(agent: {
 }): Record<string, string> {
 	const portBase = agent.portBase ?? 0;
 	return {
-		MOXE_ISSUE_NUMBER: String(agent.issueNumber),
-		MOXE_ISSUE_TITLE: agent.issueTitle,
-		MOXE_BRANCH: agent.branch,
-		MOXE_WORKTREE_PATH: agent.worktreePath,
-		MOXE_ROOT_PATH: agent.repoPath,
-		MOXE_WORKSPACE_NAME: basename(agent.worktreePath),
-		MOXE_PORT_BASE: String(portBase),
-		MOXE_PORT_API: String(portBase),
-		MOXE_PORT_WEB: String(portBase + 1),
-		MOXE_PORT_DB: String(portBase + 2),
+		MOXIE_ISSUE_NUMBER: String(agent.issueNumber),
+		MOXIE_ISSUE_TITLE: agent.issueTitle,
+		MOXIE_BRANCH: agent.branch,
+		MOXIE_WORKTREE_PATH: agent.worktreePath,
+		MOXIE_ROOT_PATH: agent.repoPath,
+		MOXIE_WORKSPACE_NAME: basename(agent.worktreePath),
+		MOXIE_PORT_BASE: String(portBase),
+		MOXIE_PORT_API: String(portBase),
+		MOXIE_PORT_WEB: String(portBase + 1),
+		MOXIE_PORT_DB: String(portBase + 2),
 	};
 }
 
@@ -165,7 +165,7 @@ export async function archiveAgent(agentId: string): Promise<void> {
 		);
 		const env: NodeJS.ProcessEnv = {
 			...baseEnv,
-			...buildMoxeEnv(agent),
+			...buildMoxieEnv(agent),
 		};
 		await runScript(
 			cleanupScript,

@@ -15,7 +15,7 @@ let newAgentWorkspace = $state<WorkspaceGroup | null>(null);
 
 const selectionStore = getSelectionStore();
 const agent = $derived(selectionStore.selectedAgent);
-const appVersion = import.meta.env.PUBLIC_MOXE_VERSION;
+const appVersion = import.meta.env.PUBLIC_MOXIE_VERSION;
 </script>
 
 <ThreePanel>
@@ -24,7 +24,7 @@ const appVersion = import.meta.env.PUBLIC_MOXE_VERSION;
 			<div
 				class="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--ctp-mantle)] px-2"
 			>
-				<span class="px-1 text-sm font-medium text-[var(--ctp-text)]">moxe v{appVersion}</span>
+				<span class="px-1 text-sm font-medium text-[var(--ctp-text)]">moxie v{appVersion}</span>
 				<button
 					class="rounded-md p-1 text-[var(--ctp-subtext0)] transition-colors hover:bg-[var(--ctp-surface0)] hover:text-[var(--ctp-text)]"
 					onclick={() => (showSettings = true)}

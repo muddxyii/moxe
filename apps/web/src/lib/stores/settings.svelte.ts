@@ -6,7 +6,7 @@ import {
 
 export type { ThemeId } from "$lib/theme/themes";
 
-const THEME_STORAGE_KEY = "moxe:settings:theme";
+const THEME_STORAGE_KEY = "moxie:settings:theme";
 let theme = $state<ThemeId>(DEFAULT_THEME_ID);
 let initialized = false;
 

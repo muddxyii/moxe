@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { agents, db, eq } from "@moxe/db";
+import { agents, db, eq } from "@moxie/db";
 import type { Hono } from "hono";
 import type { UpgradeWebSocket, WSContext } from "hono/ws";
 import { ptyManager } from "../services/pty.js";

@@ -1,5 +1,5 @@
 {
-	"name": "@moxe/server",
+	"name": "@moxie/server",
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",
@@ -15,7 +15,7 @@
 	"dependencies": {
 		"@hono/node-server": "^1.14.2",
 		"@hono/node-ws": "^1.1.1",
-		"@moxe/db": "workspace:*",
+		"@moxie/db": "workspace:*",
 		"hono": "^4.7.10",
 		"node-pty": "^1.1.0",
 		"ws": "^8.19.0"

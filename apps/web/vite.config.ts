@@ -11,7 +11,7 @@ const rootPackageVersion = JSON.parse(
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	define: {
-		"import.meta.env.PUBLIC_MOXE_VERSION": JSON.stringify(
+		"import.meta.env.PUBLIC_MOXIE_VERSION": JSON.stringify(
 			rootPackageVersion.version,
 		),
 	},

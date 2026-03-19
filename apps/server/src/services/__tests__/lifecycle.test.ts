@@ -12,9 +12,9 @@ const mocks = vi.hoisted(() => {
 		issueNumber: 42,
 		issueTitle: "Test issue",
 		issueBody: "Fix the bug",
-		branch: "moxe/42-test-issue-abc123",
-		worktreePath: "/tmp/moxe-worktrees/42-test-issue-abc123",
-		logPath: "/tmp/moxe-worktrees/42-test-issue-abc123/agent.log",
+		branch: "moxie/42-test-issue-abc123",
+		worktreePath: "/tmp/moxie-worktrees/42-test-issue-abc123",
+		logPath: "/tmp/moxie-worktrees/42-test-issue-abc123/agent.log",
 		pid: null,
 		portBase: null,
 		createdAt: "2026-01-01T00:00:00.000Z",
@@ -24,9 +24,9 @@ const mocks = vi.hoisted(() => {
 	const createWorktree = vi.fn().mockResolvedValue(undefined);
 	const removeWorktree = vi.fn().mockResolvedValue(undefined);
 	const resolvePaths = vi.fn().mockReturnValue({
-		branch: "moxe/42-test-issue-abc123",
-		worktreePath: "/tmp/moxe-worktrees/42-test-issue-abc123",
-		logPath: "/tmp/moxe-worktrees/42-test-issue-abc123/agent.log",
+		branch: "moxie/42-test-issue-abc123",
+		worktreePath: "/tmp/moxie-worktrees/42-test-issue-abc123",
+		logPath: "/tmp/moxie-worktrees/42-test-issue-abc123/agent.log",
 	});
 
 	const allocatePorts = vi.fn().mockResolvedValue(4000);
@@ -133,7 +133,7 @@ vi.mock("node:child_process", () => ({
 	spawn: vi.fn(),
 }));
 
-vi.mock("@moxe/db", () => {
+vi.mock("@moxie/db", () => {
 	const makeSelectChain = () => {
 		// biome-ignore lint/suspicious/noExplicitAny: mock chain requires self-reference
 		const chain: any = {};
