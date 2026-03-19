@@ -64,7 +64,11 @@ export function registerWorktreeShellWs(
 								command: shell,
 								args: ["-l"],
 								cwd,
-								env: { ...process.env, TERM: "xterm-color" },
+								env: {
+									...process.env,
+									TERM: "xterm-color",
+									PROMPT_EOL_MARK: "",
+								},
 								logPath,
 							});
 						} catch (err) {

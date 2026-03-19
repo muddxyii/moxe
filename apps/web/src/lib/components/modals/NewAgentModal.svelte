@@ -1,12 +1,6 @@
 <script lang="ts">
 import { toast } from "svelte-sonner";
-import {
-	addRepo,
-	createAgent,
-	fetchIssues,
-	fetchRepos,
-	pickRepoDirectory,
-} from "$lib/api";
+import { createAgent, fetchIssues, fetchRepos } from "$lib/api";
 import { getAgentStore } from "$lib/stores/agents.svelte";
 import type { Issue, Repo } from "$lib/types";
 
@@ -17,6 +11,7 @@ interface Props {
 }
 
 let { onClose, preselectedOwner, preselectedName }: Props = $props();
+const workspaceLocked = $derived(Boolean(preselectedOwner && preselectedName));
 
 const agentStore = getAgentStore();
 
@@ -27,12 +22,6 @@ let selectedIssues = $state<Set<number>>(new Set());
 let loadingRepos = $state(true);
 let loadingIssues = $state(false);
 let submitting = $state(false);
-
-// Inline add-repo state
-let showAddRepo = $state(false);
-let newRepoPath = $state("");
-let addingRepo = $state(false);
-let pickingPath = $state(false);
 
 async function loadRepos() {
 	loadingRepos = true;
@@ -72,34 +61,6 @@ function toggleIssue(num: number) {
 		next.add(num);
 	}
 	selectedIssues = next;
-}
-
-async function handleAddRepo() {
-	if (!newRepoPath.trim()) return;
-	addingRepo = true;
-	try {
-		const repo = await addRepo(newRepoPath.trim());
-		repos = [...repos, repo];
-		newRepoPath = "";
-		showAddRepo = false;
-		toast.success(`Added ${repo.owner}/${repo.name}`);
-	} catch {
-		// toast shown by api client
-	} finally {
-		addingRepo = false;
-	}
-}
-
-async function handlePickRepoPath() {
-	pickingPath = true;
-	try {
-		const { path } = await pickRepoDirectory();
-		newRepoPath = path;
-	} catch {
-		// toast shown by api client
-	} finally {
-		pickingPath = false;
-	}
 }
 
 async function handleSubmit() {
@@ -176,63 +137,31 @@ $effect(() => {
 				{#if loadingRepos}
 					<div class="skeleton h-9 w-full rounded-md"></div>
 				{:else}
-					<div class="space-y-1">
-						{#each repos as repo}
-							{@const isSelected = selectedRepo?.owner === repo.owner && selectedRepo?.name === repo.name}
-							<button
-								class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors {isSelected ? 'bg-[var(--ctp-surface1)] text-[var(--ctp-text)]' : 'bg-[var(--ctp-surface0)] text-[var(--ctp-subtext1)] hover:bg-[var(--ctp-surface1)]'}"
-								onclick={() => handleRepoSelect(repo)}
-							>
-								<span>{repo.owner}/{repo.name}</span>
-								<span class="text-xs text-[var(--ctp-overlay0)]">{repo.localPath}</span>
-							</button>
-						{/each}
-
-						{#if !showAddRepo}
-							<button
-								class="w-full rounded-md border border-dashed border-[var(--ctp-surface1)] px-3 py-2 text-sm text-[var(--ctp-subtext0)] transition-colors hover:border-[var(--ctp-surface2)] hover:text-[var(--ctp-text)]"
-								onclick={() => {
-									showAddRepo = true;
-									handlePickRepoPath();
-								}}
-							>
-								+ Add workspace
-							</button>
+					{#if workspaceLocked}
+						{#if selectedRepo}
+							<div class="rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-sm">
+								<div class="text-[var(--ctp-text)]">{selectedRepo.owner}/{selectedRepo.name}</div>
+								<div class="text-xs text-[var(--ctp-overlay0)]">{selectedRepo.localPath}</div>
+							</div>
 						{:else}
-							<div class="flex gap-2">
-								<input
-									type="text"
-									bind:value={newRepoPath}
-									placeholder="/path/to/local/clone"
-									class="flex-1 rounded-md border border-[var(--border)] bg-[var(--ctp-base)] px-3 py-2 text-sm text-[var(--ctp-text)] placeholder:text-[var(--ctp-overlay0)] focus:border-[var(--ctp-blue)] focus:outline-none"
-									onkeydown={(e) => { if (e.key === "Enter") handleAddRepo(); }}
-								/>
-								<button
-									class="rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-xs text-[var(--ctp-subtext0)] hover:bg-[var(--ctp-surface1)] disabled:opacity-50"
-									onclick={handlePickRepoPath}
-									disabled={pickingPath}
-								>
-									{pickingPath ? "Picking..." : "Pick..."}
-								</button>
-								<button
-									class="rounded-md bg-[var(--ctp-blue)] px-3 py-2 text-xs font-medium text-[var(--ctp-crust)] transition-opacity hover:opacity-80 disabled:opacity-50"
-									onclick={handleAddRepo}
-									disabled={addingRepo || !newRepoPath.trim()}
-								>
-									{addingRepo ? "..." : "Add"}
-								</button>
-								<button
-									class="rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-xs text-[var(--ctp-subtext0)] hover:bg-[var(--ctp-surface1)]"
-									onclick={() => {
-										showAddRepo = false;
-										newRepoPath = "";
-									}}
-								>
-									Cancel
-								</button>
+							<div class="rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-sm text-[var(--ctp-subtext0)]">
+								Workspace not found. Close and choose an existing workspace.
 							</div>
 						{/if}
-					</div>
+					{:else}
+						<div class="space-y-1">
+							{#each repos as repo}
+								{@const isSelected = selectedRepo?.owner === repo.owner && selectedRepo?.name === repo.name}
+								<button
+									class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors {isSelected ? 'bg-[var(--ctp-surface1)] text-[var(--ctp-text)]' : 'bg-[var(--ctp-surface0)] text-[var(--ctp-subtext1)] hover:bg-[var(--ctp-surface1)]'}"
+									onclick={() => handleRepoSelect(repo)}
+								>
+									<span>{repo.owner}/{repo.name}</span>
+									<span class="text-xs text-[var(--ctp-overlay0)]">{repo.localPath}</span>
+								</button>
+							{/each}
+						</div>
+					{/if}
 				{/if}
 			</div>
 

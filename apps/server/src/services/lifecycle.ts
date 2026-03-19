@@ -204,6 +204,7 @@ async function pipeline(agentId: string): Promise<void> {
 	const env: NodeJS.ProcessEnv = {
 		...baseEnv,
 		...buildMoxeEnv(agentWithPorts),
+		PROMPT_EOL_MARK: "",
 	};
 
 	// Step 3: run setup script

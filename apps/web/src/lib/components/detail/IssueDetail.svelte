@@ -81,7 +81,7 @@ async function handleArchive() {
 <div class="flex h-full flex-col overflow-hidden">
 	<!-- Toggle + Actions header -->
 	<div
-		class="flex items-center justify-between border-b border-[var(--border)] bg-[var(--ctp-mantle)] px-3 py-2 flex-shrink-0"
+		class="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--ctp-mantle)] px-2 flex-shrink-0"
 	>
 		<div class="flex rounded-md bg-[var(--ctp-surface0)] p-0.5">
 			<button

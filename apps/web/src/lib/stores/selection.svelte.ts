@@ -66,6 +66,20 @@ function clearTabsFromStorage(key: LocationKey) {
 	}
 }
 
+function nextTerminalNumber(tabList: Tab[]): number {
+	const used = new Set<number>();
+	for (const tab of tabList) {
+		const match = /^Terminal (\d+)$/.exec(tab.title);
+		if (!match) continue;
+		const n = Number.parseInt(match[1], 10);
+		if (Number.isInteger(n) && n > 0) used.add(n);
+	}
+
+	let candidate = 1;
+	while (used.has(candidate)) candidate += 1;
+	return candidate;
+}
+
 export function getSelectionStore() {
 	return {
 		get selection() {
@@ -109,7 +123,7 @@ export function getSelectionStore() {
 		},
 		openTab(key: LocationKey, wsUrl: string, id = crypto.randomUUID()) {
 			const existing = tabs[key] ?? [];
-			const n = existing.length + 1;
+			const n = nextTerminalNumber(existing);
 			const tab: Tab = { id, title: `Terminal ${n}`, wsUrl };
 			tabs[key] = [...existing, tab];
 			activeTabId[key] = tab.id;

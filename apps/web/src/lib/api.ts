@@ -1,5 +1,5 @@
 import { toast } from "svelte-sonner";
-import type { Agent, DiffFile, Issue, Repo } from "./types";
+import type { Agent, DiffFile, Issue, Repo, RepoInspection } from "./types";
 
 const BASE_URL = "http://localhost:3456";
 
@@ -66,6 +66,13 @@ export async function pickRepoDirectory(): Promise<{ path: string }> {
 
 export async function addRepo(localPath: string): Promise<Repo> {
 	return request("/api/repos", {
+		method: "POST",
+		body: JSON.stringify({ localPath }),
+	});
+}
+
+export async function inspectRepo(localPath: string): Promise<RepoInspection> {
+	return request("/api/repos/inspect", {
 		method: "POST",
 		body: JSON.stringify({ localPath }),
 	});

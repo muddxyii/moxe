@@ -1,6 +1,8 @@
 <script lang="ts">
 import { toast } from "svelte-sonner";
 import { deleteRepo, fetchRepos } from "$lib/api";
+import { getSettingsStore, type ThemeId } from "$lib/stores/settings.svelte";
+import { THEMES } from "$lib/theme/themes";
 import type { Repo } from "$lib/types";
 
 interface Props {
@@ -11,6 +13,8 @@ let { onClose }: Props = $props();
 
 let repos = $state<Repo[]>([]);
 let loading = $state(true);
+const settingsStore = getSettingsStore();
+let theme = $state<ThemeId>("catppuccin-macchiato");
 
 async function loadRepos() {
 	loading = true;
@@ -43,7 +47,16 @@ function handleKeydown(e: KeyboardEvent) {
 	if (e.key === "Escape") onClose();
 }
 
+function handleThemeChange(e: Event) {
+	const target = e.currentTarget as HTMLSelectElement;
+	const nextTheme = target.value as ThemeId;
+	theme = nextTheme;
+	settingsStore.setTheme(nextTheme);
+}
+
 $effect(() => {
+	settingsStore.initialize();
+	theme = settingsStore.theme;
 	loadRepos();
 });
 </script>
@@ -72,6 +85,23 @@ $effect(() => {
 		</div>
 
 		<div class="flex-1 overflow-y-auto px-4 py-3">
+			<div class="mb-5">
+				<h3 class="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--ctp-subtext0)]">
+					Theme
+				</h3>
+				<label class="sr-only" for="settings-theme">Theme</label>
+				<select
+					id="settings-theme"
+					class="w-full rounded-md border border-[var(--border)] bg-[var(--ctp-surface0)] px-3 py-2 text-sm text-[var(--ctp-text)] outline-none transition-colors focus:border-[var(--ctp-blue)]"
+					value={theme}
+					onchange={handleThemeChange}
+				>
+					{#each THEMES as option}
+						<option value={option.id}>{option.label}</option>
+					{/each}
+				</select>
+			</div>
+
 			<h3 class="mb-3 text-xs font-medium uppercase tracking-wider text-[var(--ctp-subtext0)]">
 				Registered Repositories
 			</h3>
@@ -84,7 +114,7 @@ $effect(() => {
 				</div>
 			{:else if repos.length === 0}
 				<div class="rounded-md bg-[var(--ctp-surface0)] px-3 py-6 text-center text-sm text-[var(--ctp-subtext0)]">
-					No repositories registered yet. Add one when creating an agent.
+					No repositories registered yet. Add one from the sidebar with New Workspace.
 				</div>
 			{:else}
 				<div class="space-y-2">

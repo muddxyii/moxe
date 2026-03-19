@@ -68,6 +68,10 @@ export interface Repo {
 	localPath: string;
 }
 
+export interface RepoInspection extends Repo {
+	alreadyRegistered: boolean;
+}
+
 export type WorkspaceGroup = {
 	workspaceId: string; // "owner/name"
 	label: string;

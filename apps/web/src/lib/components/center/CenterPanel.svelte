@@ -67,30 +67,26 @@ $effect(() => {
 });
 </script>
 
-<div class="flex h-full flex-col bg-[var(--background)]">
+<div class="flex h-full flex-col border-r border-[var(--border)] bg-[var(--background)]">
 	{#if !selection}
 		<EmptyState />
 	{:else if currentTabs.length === 0}
 		<EmptyState />
 	{:else}
 		<!-- Tab bar -->
-		<div
-			class="flex items-end border-b border-[var(--border)] bg-[var(--ctp-mantle)] px-2"
-			style="padding-top:12px;padding-bottom:0;"
-		>
+		<div class="flex h-12 items-stretch border-b border-[var(--border)] bg-[var(--ctp-mantle)] px-0">
 			{#each currentTabs as tab (tab.id)}
 				<button
-					class="flex items-center gap-2 px-3 pb-3 text-xs border-b-2 transition-colors"
-					class:border-[var(--ctp-blue)]={activeId === tab.id}
+					class="flex h-full min-w-[120px] items-center justify-between gap-2 border-r border-[var(--border)] px-3 text-sm transition-colors"
+					class:bg-[var(--ctp-base)]={activeId === tab.id}
 					class:text-[var(--ctp-text)]={activeId === tab.id}
-					class:border-transparent={activeId !== tab.id}
+					class:bg-[var(--ctp-crust)]={activeId !== tab.id}
 					class:text-[var(--ctp-subtext0)]={activeId !== tab.id}
 					onclick={() => handleSwitch(tab.id)}
-					style="margin-bottom:-1px;"
 				>
-					{tab.title}
+					<span class="min-w-0 flex-1 truncate">{tab.title}</span>
 					<span
-						class="ml-1 opacity-50 hover:opacity-100"
+						class="shrink-0 opacity-50 hover:opacity-100"
 						onclick={(e) => { e.stopPropagation(); handleClose(tab.id); }}
 						role="button"
 						tabindex="0"
@@ -98,18 +94,24 @@ $effect(() => {
 					>×</span>
 				</button>
 			{/each}
-			<button
-				class="px-3 pb-3 text-[var(--ctp-subtext0)] hover:text-[var(--ctp-text)] text-base transition-colors"
-				onclick={handleAdd}
-				title="New terminal"
-			>+</button>
+			<div class="flex h-full items-center px-2">
+				<button
+					class="flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--ctp-crust)] text-lg text-[var(--ctp-subtext0)] transition-colors hover:bg-[var(--ctp-surface0)] hover:text-[var(--ctp-text)]"
+					onclick={handleAdd}
+					title="New terminal"
+				>
+					<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+						<path d="M8 3.5v9M3.5 8h9" />
+					</svg>
+				</button>
+			</div>
 		</div>
 
 		<!-- Terminal area — all tabs mounted, inactive ones hidden via visibility -->
-		<div class="relative flex-1 overflow-hidden">
+		<div class="relative flex-1 overflow-hidden bg-[var(--background)] p-1">
 			{#each currentTabs as tab (tab.id)}
 				<div
-					class="absolute inset-0"
+					class="absolute inset-1"
 					style="visibility:{tab.id === activeId ? 'visible' : 'hidden'};"
 				>
 					<Terminal wsUrl={tab.wsUrl} kind={kindFromWsUrl(tab.wsUrl)} />

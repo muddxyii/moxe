@@ -2,7 +2,8 @@
 import type { Terminal } from "@battlefieldduck/xterm-svelte";
 import { Xterm, XtermAddon } from "@battlefieldduck/xterm-svelte";
 import { onMount } from "svelte";
-import { catppuccinMacchiato } from "./theme";
+import { getSettingsStore } from "$lib/stores/settings.svelte";
+import { getThemeById } from "$lib/theme/themes";
 
 interface Props {
 	wsUrl: string;
@@ -23,6 +24,13 @@ let needsReset = false;
 let suppressInput = false;
 let writeBatch = "";
 let batchRaf: number | null = null;
+const settingsStore = getSettingsStore();
+const terminalTheme = $derived(getThemeById(settingsStore.theme).terminal);
+
+$effect(() => {
+	if (!terminal) return;
+	terminal.options.theme = terminalTheme;
+});
 
 async function onLoad(term: Terminal) {
 	const { FitAddon } = await XtermAddon.FitAddon();
@@ -43,6 +51,13 @@ async function onLoad(term: Terminal) {
 	}
 	fitAddon.fit();
 	term.focus();
+	term.attachCustomKeyEventHandler((event: KeyboardEvent) => {
+		if (event.type !== "keydown" || event.key !== "Tab") return true;
+		event.preventDefault();
+		if (ws?.readyState !== WebSocket.OPEN || suppressInput) return false;
+		ws.send(event.shiftKey ? "\u001b[Z" : "\t");
+		return false;
+	});
 
 	const observer = new ResizeObserver(() => {
 		fitAddon.fit();
@@ -89,6 +104,17 @@ function connectWs(url: string) {
 		connectionStatus = "connected";
 		reconnectDelay = 1000;
 		needsReset = true;
+		// Ensure PTY dimensions match the rendered terminal immediately on connect.
+		// Without this, server PTY may stay at default 120x40 until the next resize event.
+		if (terminal) {
+			ws?.send(
+				JSON.stringify({
+					type: "resize",
+					cols: terminal.cols,
+					rows: terminal.rows,
+				}),
+			);
+		}
 	};
 
 	ws.onmessage = (event) => {
@@ -165,6 +191,7 @@ function reconnectNow() {
 }
 
 onMount(() => {
+	settingsStore.initialize();
 	return () => cleanupWs();
 });
 </script>
@@ -173,7 +200,7 @@ onMount(() => {
 	<Xterm
 		bind:terminal
 		options={{
-			theme: catppuccinMacchiato,
+			theme: terminalTheme,
 			scrollback: 10000,
 			fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
 			fontSize: 13,

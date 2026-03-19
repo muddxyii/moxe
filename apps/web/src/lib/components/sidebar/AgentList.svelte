@@ -1,19 +1,23 @@
 <script lang="ts">
 import { onMount } from "svelte";
+import { toast } from "svelte-sonner";
+import { addRepo, inspectRepo, pickRepoDirectory } from "$lib/api";
 import RepoGroup from "$lib/components/sidebar/RepoGroup.svelte";
 import { getAgentStore } from "$lib/stores/agents.svelte";
 import { getSelectionStore } from "$lib/stores/selection.svelte";
-import type { WorkspaceGroup } from "$lib/types";
+import type { RepoInspection, WorkspaceGroup } from "$lib/types";
 
 interface Props {
 	onNewAgent: (workspace?: WorkspaceGroup) => void;
-	onSettings: () => void;
 }
 
-let { onNewAgent, onSettings }: Props = $props();
+let { onNewAgent }: Props = $props();
 
 const agentStore = getAgentStore();
 const selectionStore = getSelectionStore();
+let pendingWorkspace = $state<RepoInspection | null>(null);
+let confirmingAdd = $state(false);
+let pickingWorkspace = $state(false);
 
 onMount(() => {
 	agentStore.startPolling();
@@ -35,39 +39,59 @@ function isShellActive(owner: string, name: string): boolean {
 	const sel = selectionStore.selection;
 	return sel?.type === "shell" && sel.owner === owner && sel.name === name;
 }
+
+async function handleAddWorkspace() {
+	pickingWorkspace = true;
+	try {
+		const { path } = await pickRepoDirectory();
+		pendingWorkspace = await inspectRepo(path);
+	} catch {
+		// toast shown by api client
+	} finally {
+		pickingWorkspace = false;
+	}
+}
+
+async function handleConfirmWorkspace() {
+	if (!pendingWorkspace) return;
+	confirmingAdd = true;
+	try {
+		const repo = await addRepo(pendingWorkspace.localPath);
+		toast.success(`Added workspace ${repo.owner}/${repo.name}`);
+		pendingWorkspace = null;
+		agentStore.refreshAgents();
+	} catch {
+		// toast shown by api client
+	} finally {
+		confirmingAdd = false;
+	}
+}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="flex h-full flex-col bg-[var(--sidebar)]">
-	<!-- Header -->
-	<div class="flex items-center justify-between border-b border-[var(--border)] px-3 py-3">
-		<span class="text-sm font-semibold text-[var(--ctp-text)]">Workspaces</span>
+<div class="flex h-full min-w-0 flex-col bg-[var(--ctp-crust)]">
+	<div class="border-b border-[var(--ctp-surface1)] px-4 py-3">
 		<button
-			class="rounded p-1 text-[var(--ctp-subtext0)] transition-colors hover:bg-[var(--ctp-surface0)] hover:text-[var(--ctp-text)]"
-			onclick={onSettings}
-			title="Settings"
+			class="w-full rounded-lg bg-[var(--ctp-surface0)] px-3 py-2 text-left text-sm font-medium text-[var(--ctp-text)] transition-colors hover:bg-[var(--ctp-surface1)] disabled:opacity-60"
+			onclick={handleAddWorkspace}
+			disabled={pickingWorkspace}
 		>
-			<svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
-				<path
-					d="M7.07 0c-.473 0-.88.33-.97.793L5.77 2.5a5.97 5.97 0 00-1.272.734L2.9 2.67a1.001 1.001 0 00-1.1.428L.73 4.9a1 1 0 00.13 1.22l1.272 1.1a6.07 6.07 0 000 1.56L.86 9.88a1 1 0 00-.13 1.22l1.07 1.8a1 1 0 001.1.428l1.597-.563c.39.29.816.54 1.272.734l.33 1.707c.09.463.497.793.97.793h2.14c.473 0 .88-.33.97-.793l.33-1.707a5.97 5.97 0 001.272-.734l1.597.563a1 1 0 001.1-.428l1.07-1.8a1 1 0 00-.13-1.22l-1.272-1.1a6.07 6.07 0 000-1.56l1.272-1.1a1 1 0 00.13-1.22l-1.07-1.8a1.001 1.001 0 00-1.1-.428l-1.597.563A5.97 5.97 0 009.49 2.5l-.33-1.707A1.001 1.001 0 008.19 0H7.07zM8 5.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"
-				/>
-			</svg>
+			{pickingWorkspace ? "Picking..." : "+ New Workspace"}
 		</button>
 	</div>
 
-	<!-- Workspace list -->
-	<div class="flex-1 overflow-y-auto py-2">
+	<div class="flex-1 overflow-y-auto px-2 py-3">
 		{#if agentStore.loading}
 			{#each Array(3) as _}
-				<div class="px-3 py-2">
+				<div class="px-2 py-2">
 					<div class="skeleton mb-2 h-4 w-3/4"></div>
 					<div class="skeleton h-3 w-1/2"></div>
 				</div>
 			{/each}
 		{:else if agentStore.workspaceGroups.length === 0}
 			<div class="px-3 py-8 text-center text-sm text-[var(--ctp-subtext0)]">
-				No workspaces yet. Add one in Settings.
+				No workspaces yet. Click New Workspace to add one.
 			</div>
 		{:else}
 			{#each agentStore.workspaceGroups as workspace (workspace.workspaceId)}
@@ -84,8 +108,7 @@ function isShellActive(owner: string, name: string): boolean {
 		{/if}
 	</div>
 
-	<!-- Completed toggle -->
-	<div class="border-t border-[var(--border)] px-3 py-2">
+	<div class="border-t border-[var(--ctp-surface1)] px-3 py-2">
 		<button
 			class="flex w-full items-center gap-2 text-xs text-[var(--ctp-subtext0)] transition-colors hover:text-[var(--ctp-text)]"
 			onclick={agentStore.toggleCompleted}
@@ -102,14 +125,42 @@ function isShellActive(owner: string, name: string): boolean {
 			Show completed
 		</button>
 	</div>
-
-	<!-- New Agent button -->
-	<div class="border-t border-[var(--border)] p-3">
-		<button
-			class="w-full rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-sm font-medium text-[var(--ctp-text)] transition-colors hover:bg-[var(--ctp-surface1)]"
-			onclick={() => onNewAgent()}
-		>
-			+ New Agent
-		</button>
-	</div>
 </div>
+
+{#if pendingWorkspace}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+		onclick={(e) => {
+			if (e.target === e.currentTarget && !confirmingAdd) pendingWorkspace = null;
+		}}
+	>
+		<div class="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--ctp-mantle)] p-4 shadow-xl">
+			<h3 class="text-sm font-semibold text-[var(--ctp-text)]">Confirm Workspace</h3>
+			<p class="mt-2 text-sm text-[var(--ctp-subtext0)]">Is this the correct repository?</p>
+			<div class="mt-3 space-y-1 rounded-md bg-[var(--ctp-surface0)] p-3">
+				<div class="text-sm text-[var(--ctp-text)]">{pendingWorkspace.owner}/{pendingWorkspace.name}</div>
+				<div class="break-all text-xs text-[var(--ctp-overlay0)]">{pendingWorkspace.localPath}</div>
+			</div>
+			{#if pendingWorkspace.alreadyRegistered}
+				<p class="mt-2 text-xs text-[var(--ctp-yellow)]">This workspace is already registered.</p>
+			{/if}
+			<div class="mt-4 flex justify-end gap-2">
+				<button
+					class="rounded-md bg-[var(--ctp-surface0)] px-3 py-2 text-sm text-[var(--ctp-subtext1)] hover:bg-[var(--ctp-surface1)] disabled:opacity-60"
+					onclick={() => (pendingWorkspace = null)}
+					disabled={confirmingAdd}
+				>
+					Cancel
+				</button>
+				<button
+					class="rounded-md bg-[var(--ctp-blue)] px-3 py-2 text-sm font-medium text-[var(--ctp-crust)] hover:opacity-80 disabled:opacity-60"
+					onclick={handleConfirmWorkspace}
+					disabled={confirmingAdd || pendingWorkspace.alreadyRegistered}
+				>
+					{confirmingAdd ? "Adding..." : "Add"}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

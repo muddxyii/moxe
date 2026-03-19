@@ -9,12 +9,12 @@ interface Props {
 
 let { left, center, right }: Props = $props();
 
-let leftWidth = $state(240);
+let leftWidth = $state(250);
 let rightWidth = $state(320);
 </script>
 
 <div class="flex h-screen w-screen overflow-hidden">
-	<ResizablePanel bind:width={leftWidth} minWidth={180} maxWidth={400} side="left">
+	<ResizablePanel bind:width={leftWidth} minWidth={210} maxWidth={360} side="left">
 		{@render left()}
 	</ResizablePanel>
 
