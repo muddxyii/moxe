@@ -82,8 +82,23 @@ export function registerTerminalWs(
 				},
 
 				onMessage(event, ws) {
-					const data =
+					const raw =
 						typeof event.data === "string" ? event.data : event.data.toString();
+
+					try {
+						const msg = JSON.parse(raw);
+						if (
+							msg.type === "resize" &&
+							typeof msg.cols === "number" &&
+							typeof msg.rows === "number"
+						) {
+							ptyManager.resize(agentId, msg.cols, msg.rows);
+							return;
+						}
+					} catch {
+						// Not JSON — treat as raw terminal input
+					}
+
 					const instance = ptyManager.get(agentId);
 					if (
 						claimInputOwnershipIfAlive(
@@ -93,7 +108,7 @@ export function registerTerminalWs(
 							instance?.alive ?? false,
 						)
 					) {
-						ptyManager.write(agentId, data);
+						ptyManager.write(agentId, raw);
 					}
 				},
 

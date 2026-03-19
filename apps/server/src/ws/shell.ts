@@ -1,4 +1,5 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Hono } from "hono";
@@ -23,7 +24,7 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 				: `shell:${owner}/${name}`;
 
 			return {
-				onOpen(_event, ws) {
+				async onOpen(_event, ws) {
 					// Find the registered repo
 					const repos = readRepos();
 					const repo = repos.find((r) => r.owner === owner && r.name === name);
@@ -35,16 +36,18 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 						return;
 					}
 
+					// Compute log path (needed for both spawn and backfill)
+					const logDir = join(homedir(), ".moxe", "shell-logs");
+					mkdirSync(logDir, { recursive: true });
+					const logPath = join(
+						logDir,
+						`${owner}-${name}${tabId ? `-${tabId}` : ""}.log`,
+					);
+
 					// Spawn shell if not already running
 					let instance = ptyManager.get(sessionKey);
 					if (!instance || !instance.alive) {
 						const shell = process.env.SHELL || "/bin/zsh";
-						const logDir = join(homedir(), ".moxe", "shell-logs");
-						mkdirSync(logDir, { recursive: true });
-						const logPath = join(
-							logDir,
-							`${owner}-${name}${tabId ? `-${tabId}` : ""}.log`,
-						);
 
 						// Use stored CWD if available, fall back to repo.localPath
 						const stored = sessionStore.get(sessionKey);
@@ -70,11 +73,35 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 						}
 					}
 
-					// Subscribe to live output
-					const unsub = ptyManager.subscribe(sessionKey, (data) => {
+					// Subscribe and buffer live output during backfill
+					const liveBuffer: string[] = [];
+					const bufferUnsub = ptyManager.subscribe(sessionKey, (data) => {
+						liveBuffer.push(data);
+					});
+
+					// Backfill from log file
+					if (existsSync(logPath)) {
+						try {
+							const content = await readFile(logPath, "utf-8");
+							if (content)
+								ws.send(JSON.stringify({ type: "output", data: content }));
+						} catch {
+							/* continue without backfill */
+						}
+					}
+
+					// Flush buffered live data
+					for (const chunk of liveBuffer) {
+						ws.send(JSON.stringify({ type: "output", data: chunk }));
+					}
+					liveBuffer.length = 0;
+
+					// Replace buffer with direct passthrough
+					bufferUnsub();
+					const liveUnsub = ptyManager.subscribe(sessionKey, (data) => {
 						ws.send(JSON.stringify({ type: "output", data }));
 					});
-					unsubscribers.set(ws, unsub);
+					unsubscribers.set(ws, liveUnsub);
 
 					// Input ownership
 					if (!inputOwners.has(sessionKey)) inputOwners.set(sessionKey, ws);
@@ -90,8 +117,23 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 				},
 
 				onMessage(event, ws) {
-					const data =
+					const raw =
 						typeof event.data === "string" ? event.data : event.data.toString();
+
+					try {
+						const msg = JSON.parse(raw);
+						if (
+							msg.type === "resize" &&
+							typeof msg.cols === "number" &&
+							typeof msg.rows === "number"
+						) {
+							ptyManager.resize(sessionKey, msg.cols, msg.rows);
+							return;
+						}
+					} catch {
+						// Not JSON — treat as raw terminal input
+					}
+
 					const instance = ptyManager.get(sessionKey);
 					if (
 						claimInputOwnershipIfAlive(
@@ -101,7 +143,7 @@ export function registerShellWs(app: Hono, upgradeWebSocket: UpgradeWebSocket) {
 							instance?.alive ?? false,
 						)
 					) {
-						ptyManager.write(sessionKey, data);
+						ptyManager.write(sessionKey, raw);
 					}
 				},
 

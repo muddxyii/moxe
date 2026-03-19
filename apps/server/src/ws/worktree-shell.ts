@@ -1,4 +1,5 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { agents, db, eq } from "@moxe/db";
@@ -23,7 +24,7 @@ export function registerWorktreeShellWs(
 			const sessionKey = `worktree-shell:${agentId}:${tabId ?? "default"}`;
 
 			return {
-				onOpen(_event, ws) {
+				async onOpen(_event, ws) {
 					const agent = db
 						.select()
 						.from(agents)
@@ -41,15 +42,18 @@ export function registerWorktreeShellWs(
 						return;
 					}
 
+					// Compute log path (needed for both spawn and backfill)
+					const logDir = join(homedir(), ".moxe", "shell-logs");
+					mkdirSync(logDir, { recursive: true });
+					const logPath = join(
+						logDir,
+						`worktree-${agentId}-${tabId ?? "default"}.log`,
+					);
+
+					// Spawn shell if not already running
 					let instance = ptyManager.get(sessionKey);
 					if (!instance || !instance.alive) {
 						const shell = process.env.SHELL || "/bin/zsh";
-						const logDir = join(homedir(), ".moxe", "shell-logs");
-						mkdirSync(logDir, { recursive: true });
-						const logPath = join(
-							logDir,
-							`worktree-${agentId}-${tabId ?? "default"}.log`,
-						);
 
 						// Use stored CWD if available, fall back to agent.worktreePath
 						const stored = sessionStore.get(sessionKey);
@@ -75,13 +79,40 @@ export function registerWorktreeShellWs(
 						}
 					}
 
-					const unsub = ptyManager.subscribe(sessionKey, (data) => {
+					// Subscribe and buffer live output during backfill
+					const liveBuffer: string[] = [];
+					const bufferUnsub = ptyManager.subscribe(sessionKey, (data) => {
+						liveBuffer.push(data);
+					});
+
+					// Backfill from log file
+					if (existsSync(logPath)) {
+						try {
+							const content = await readFile(logPath, "utf-8");
+							if (content)
+								ws.send(JSON.stringify({ type: "output", data: content }));
+						} catch {
+							/* continue without backfill */
+						}
+					}
+
+					// Flush buffered live data
+					for (const chunk of liveBuffer) {
+						ws.send(JSON.stringify({ type: "output", data: chunk }));
+					}
+					liveBuffer.length = 0;
+
+					// Replace buffer with direct passthrough
+					bufferUnsub();
+					const liveUnsub = ptyManager.subscribe(sessionKey, (data) => {
 						ws.send(JSON.stringify({ type: "output", data }));
 					});
-					unsubscribers.set(ws, unsub);
+					unsubscribers.set(ws, liveUnsub);
 
+					// Input ownership
 					if (!inputOwners.has(sessionKey)) inputOwners.set(sessionKey, ws);
 
+					// Send current status
 					ws.send(
 						JSON.stringify({
 							type: "status",
@@ -92,8 +123,23 @@ export function registerWorktreeShellWs(
 				},
 
 				onMessage(event, ws) {
-					const data =
+					const raw =
 						typeof event.data === "string" ? event.data : event.data.toString();
+
+					try {
+						const msg = JSON.parse(raw);
+						if (
+							msg.type === "resize" &&
+							typeof msg.cols === "number" &&
+							typeof msg.rows === "number"
+						) {
+							ptyManager.resize(sessionKey, msg.cols, msg.rows);
+							return;
+						}
+					} catch {
+						// Not JSON — treat as raw terminal input
+					}
+
 					const instance = ptyManager.get(sessionKey);
 					if (
 						claimInputOwnershipIfAlive(
@@ -103,7 +149,7 @@ export function registerWorktreeShellWs(
 							instance?.alive ?? false,
 						)
 					) {
-						ptyManager.write(sessionKey, data);
+						ptyManager.write(sessionKey, raw);
 					}
 				},
 

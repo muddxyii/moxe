@@ -157,6 +157,13 @@ class PtyManager {
 		sessionStore.end(agentId);
 	}
 
+	resize(sessionKey: string, cols: number, rows: number): void {
+		const instance = this.instances.get(sessionKey);
+		if (instance?.alive) {
+			instance.pty.resize(cols, rows);
+		}
+	}
+
 	write(agentId: string, data: string): void {
 		const instance = this.instances.get(agentId);
 		if (instance?.alive) {

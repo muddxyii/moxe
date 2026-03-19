@@ -19,6 +19,10 @@ let connectionStatus = $state<"connecting" | "connected" | "disconnected">(
 	"connecting",
 );
 let processAlive = $state(true);
+let needsReset = false;
+let suppressInput = false;
+let writeBatch = "";
+let batchRaf: number | null = null;
 
 async function onLoad(term: Terminal) {
 	const { FitAddon } = await XtermAddon.FitAddon();
@@ -27,10 +31,28 @@ async function onLoad(term: Terminal) {
 	const webLinksAddon = new WebLinksAddon();
 	term.loadAddon(fitAddon);
 	term.loadAddon(webLinksAddon);
+	try {
+		const { WebglAddon } = await XtermAddon.WebglAddon();
+		const webglAddon = new WebglAddon();
+		webglAddon.onContextLoss(() => {
+			webglAddon.dispose();
+		});
+		term.loadAddon(webglAddon);
+	} catch {
+		// WebGL not available — DOM renderer is fine
+	}
 	fitAddon.fit();
 	term.focus();
 
-	const observer = new ResizeObserver(() => fitAddon.fit());
+	const observer = new ResizeObserver(() => {
+		fitAddon.fit();
+		const dims = fitAddon.proposeDimensions();
+		if (dims && ws?.readyState === WebSocket.OPEN) {
+			ws.send(
+				JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }),
+			);
+		}
+	});
 	const el = term.element;
 	if (el) observer.observe(el);
 
@@ -38,8 +60,22 @@ async function onLoad(term: Terminal) {
 }
 
 function onData(data: string) {
+	if (suppressInput) return;
 	if (ws?.readyState === WebSocket.OPEN) {
 		ws.send(data);
+	}
+}
+
+function queueWrite(data: string) {
+	writeBatch += data;
+	if (batchRaf === null) {
+		batchRaf = requestAnimationFrame(() => {
+			if (terminal && writeBatch) {
+				terminal.write(writeBatch);
+				writeBatch = "";
+			}
+			batchRaf = null;
+		});
 	}
 }
 
@@ -52,6 +88,7 @@ function connectWs(url: string) {
 	ws.onopen = () => {
 		connectionStatus = "connected";
 		reconnectDelay = 1000;
+		needsReset = true;
 	};
 
 	ws.onmessage = (event) => {
@@ -59,7 +96,19 @@ function connectWs(url: string) {
 		try {
 			const msg = JSON.parse(event.data);
 			if (msg.type === "output") {
-				terminal.write(msg.data);
+				if (needsReset) {
+					// Suppress input during reset — terminal.reset() causes xterm to emit
+					// device attribute queries (DA1) that would be typed into the shell as garbage
+					suppressInput = true;
+					terminal.reset();
+					needsReset = false;
+					terminal.write(msg.data);
+					setTimeout(() => {
+						suppressInput = false;
+					}, 100);
+				} else {
+					queueWrite(msg.data);
+				}
 			} else if (msg.type === "status") {
 				processAlive = msg.alive as boolean;
 			}
@@ -81,13 +130,20 @@ function connectWs(url: string) {
 function scheduleReconnect(url: string) {
 	if (reconnectTimeout) clearTimeout(reconnectTimeout);
 	reconnectTimeout = setTimeout(() => {
-		if (terminal) terminal.clear();
 		connectWs(url);
 		reconnectDelay = Math.min(reconnectDelay * 2, 10000);
 	}, reconnectDelay);
 }
 
 function cleanupWs() {
+	if (batchRaf !== null) {
+		cancelAnimationFrame(batchRaf);
+		batchRaf = null;
+	}
+	if (terminal && writeBatch) {
+		terminal.write(writeBatch);
+		writeBatch = "";
+	}
 	if (reconnectTimeout) {
 		clearTimeout(reconnectTimeout);
 		reconnectTimeout = null;
@@ -104,7 +160,6 @@ function reconnectNow() {
 		clearTimeout(reconnectTimeout);
 		reconnectTimeout = null;
 	}
-	if (terminal) terminal.clear();
 	connectWs(wsUrl);
 	reconnectDelay = 1000;
 }
