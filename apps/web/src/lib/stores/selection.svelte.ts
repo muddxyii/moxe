@@ -4,7 +4,12 @@ type AgentSelection = { type: "agent"; id: string };
 type ShellSelection = { type: "shell"; owner: string; name: string };
 type Selection = AgentSelection | ShellSelection | null;
 
-export type Tab = { id: string; title: string; wsUrl: string };
+export type Tab = {
+	id: string;
+	title: string;
+	wsUrl: string;
+	initialCommand?: string;
+};
 export type LocationKey = string; // "agent:{id}" | "shell:{owner}/{name}"
 
 let selection = $state<Selection>(null);
@@ -121,10 +126,21 @@ export function getSelectionStore() {
 				}
 			}
 		},
-		openTab(key: LocationKey, wsUrl: string, id = crypto.randomUUID()) {
+		openTab(
+			key: LocationKey,
+			wsUrl: string,
+			id = crypto.randomUUID(),
+			options?: { title?: string; initialCommand?: string },
+		) {
 			const existing = tabs[key] ?? [];
-			const n = nextTerminalNumber(existing);
-			const tab: Tab = { id, title: `Terminal ${n}`, wsUrl };
+			const title =
+				options?.title ?? `Terminal ${nextTerminalNumber(existing)}`;
+			const tab: Tab = {
+				id,
+				title,
+				wsUrl,
+				initialCommand: options?.initialCommand,
+			};
 			tabs[key] = [...existing, tab];
 			activeTabId[key] = tab.id;
 			persistTabs(key, tabs[key], activeTabId[key]);
@@ -145,6 +161,15 @@ export function getSelectionStore() {
 		switchTab(key: LocationKey, tabId: string) {
 			activeTabId[key] = tabId;
 			persistTabs(key, tabs[key] ?? [], tabId);
+		},
+		clearInitialCommand(key: LocationKey, tabId: string) {
+			const existing = tabs[key];
+			if (!existing) return;
+			const updated = existing.map((t) =>
+				t.id === tabId ? { ...t, initialCommand: undefined } : t,
+			);
+			tabs[key] = updated;
+			persistTabs(key, updated, activeTabId[key]);
 		},
 		clearLocation(key: LocationKey) {
 			delete tabs[key];

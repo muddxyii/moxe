@@ -1,6 +1,7 @@
 <script lang="ts">
 import CenterPanel from "$lib/components/center/CenterPanel.svelte";
 import IssueDetail from "$lib/components/detail/IssueDetail.svelte";
+import WorkspaceConfig from "$lib/components/detail/WorkspaceConfig.svelte";
 import ThreePanel from "$lib/components/layout/ThreePanel.svelte";
 import NewAgentModal from "$lib/components/modals/NewAgentModal.svelte";
 import SettingsModal from "$lib/components/modals/SettingsModal.svelte";
@@ -51,13 +52,7 @@ const appVersion = import.meta.env.PUBLIC_MOXE_VERSION;
 			<IssueDetail {agent} />
 		{:else if selectionStore.selection?.type === "shell"}
 			{@const sel = selectionStore.selection}
-			<div class="flex h-full flex-col">
-				<div class="h-12 border-b border-[var(--border)] bg-[var(--ctp-mantle)]"></div>
-				<div class="p-4">
-					<p class="text-sm font-semibold text-[var(--ctp-text)]">{sel.owner}/{sel.name}</p>
-					<p class="mt-1 text-xs text-[var(--ctp-subtext0)]">Shell session</p>
-				</div>
-			</div>
+			<WorkspaceConfig owner={sel.owner} name={sel.name} />
 		{:else}
 			<div class="flex h-full flex-col">
 				<div class="h-12 border-b border-[var(--border)] bg-[var(--ctp-mantle)]"></div>

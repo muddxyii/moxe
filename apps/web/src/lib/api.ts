@@ -1,5 +1,12 @@
 import { toast } from "svelte-sonner";
-import type { Agent, DiffFile, Issue, Repo, RepoInspection } from "./types";
+import type {
+	Agent,
+	DiffFile,
+	Issue,
+	Repo,
+	RepoInspection,
+	WorkspaceConfig,
+} from "./types";
 
 const BASE_URL = "http://localhost:3456";
 
@@ -76,6 +83,15 @@ export async function inspectRepo(localPath: string): Promise<RepoInspection> {
 		method: "POST",
 		body: JSON.stringify({ localPath }),
 	});
+}
+
+export async function fetchWorkspaceConfig(
+	owner: string,
+	name: string,
+): Promise<WorkspaceConfig> {
+	return request(
+		`/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/config`,
+	);
 }
 
 export async function deleteRepo(owner: string, name: string): Promise<void> {

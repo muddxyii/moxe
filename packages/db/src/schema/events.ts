@@ -15,9 +15,9 @@ export type EventType =
 	| "queued"
 	| "worktree_created"
 	| "ports_allocated"
-	| "setup_start"
-	| "setup_done"
-	| "setup_failed"
+	| "init_start"
+	| "init_done"
+	| "init_failed"
 	| "agent_start"
 	| "agent_done"
 	| "agent_failed"
@@ -40,9 +40,9 @@ const statusMap: Record<EventType, AgentStatus> = {
 	queued: "pending",
 	worktree_created: "pending",
 	ports_allocated: "pending",
-	setup_start: "setting_up",
-	setup_done: "setting_up",
-	setup_failed: "failed",
+	init_start: "setting_up",
+	init_done: "setting_up",
+	init_failed: "failed",
 	agent_start: "running",
 	agent_done: "completed",
 	agent_failed: "failed",

@@ -19,7 +19,7 @@ import { createWorktree, resolvePaths } from "./worktree.js";
 interface RepoConfig {
 	command: string;
 	args: string[];
-	setup: string | null;
+	init: string | null;
 }
 
 function readConfig(repoPath: string): RepoConfig {
@@ -57,7 +57,7 @@ function readConfig(repoPath: string): RepoConfig {
 	return {
 		command,
 		args,
-		setup: resolveScript("setup", "setup.sh"),
+		init: resolveScript("init", "init.sh"),
 	};
 }
 
@@ -207,26 +207,26 @@ async function pipeline(agentId: string): Promise<void> {
 		PROMPT_EOL_MARK: "",
 	};
 
-	// Step 3: run setup script
-	if (config.setup) {
-		await appendEvent(agentId, "setup_start");
+	// Step 3: run init script
+	if (config.init) {
+		await appendEvent(agentId, "init_start");
 		try {
 			const { exitCode } = await runScript(
-				config.setup,
+				config.init,
 				agent.worktreePath,
 				env,
 				logPath,
 				scriptTimeout,
 			);
 			if (exitCode !== 0) {
-				await appendEvent(agentId, "setup_failed", { exitCode });
+				await appendEvent(agentId, "init_failed", { exitCode });
 				return;
 			}
 		} catch (err) {
-			await appendEvent(agentId, "setup_failed", { error: String(err) });
+			await appendEvent(agentId, "init_failed", { error: String(err) });
 			return;
 		}
-		await appendEvent(agentId, "setup_done");
+		await appendEvent(agentId, "init_done");
 	}
 
 	// Step 4: spawn PTY
@@ -269,7 +269,7 @@ async function pipeline(agentId: string): Promise<void> {
 		return;
 	}
 
-	// Step 5: record result — no teardown, no PR, no cleanup
+	// Step 5: record result — no cleanup, no PR
 	// Resources stay intact until explicit archive
 	if (exitCode === 0) {
 		await appendEvent(agentId, "agent_done");
@@ -325,5 +325,5 @@ export async function launchAgent(
 export async function killAgent(agentId: string): Promise<void> {
 	await ptyManager.kill(agentId);
 	await appendEvent(agentId, "killed");
-	// NO teardown, NO cleanup — archive will handle it
+	// NO cleanup — archive will handle it
 }

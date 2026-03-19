@@ -13,7 +13,7 @@
 
 ## 1. Purpose
 
-A lightweight, local-first web app for running multiple Claude Code agents in parallel. Each agent works in its own git worktree, scoped to a GitHub Issue. The app handles setup, teardown, monitoring, and PR creation — leaving the developer to review output, not manage terminals.
+A lightweight, local-first web app for running multiple Claude Code agents in parallel. Each agent works in its own git worktree, scoped to a GitHub Issue. The app handles init, cleanup, monitoring, and PR creation — leaving the developer to review output, not manage terminals.
 
 No cloud sync. No auth. No database server. State lives in a local SQLite file. The UI runs in a browser tab.
 
@@ -23,7 +23,7 @@ No cloud sync. No auth. No database server. State lives in a local SQLite file. 
 
 - Pick one or more GitHub Issues and launch an agent per issue
 - Each agent runs in an isolated git worktree on its own branch
-- Run setup.sh before the agent starts, teardown.sh when it finishes
+- Run init.sh before the agent starts, cleanup.sh when it finishes
 - Embedded terminal (XTerm.js) per agent — watch it work in real time
 - Sidebar showing all running agents and their status at a glance
 - On completion: open a PR linked to the source issue, then close the issue
@@ -85,7 +85,7 @@ Browser (SvelteKit)
 Node + Hono Server
      |  node-pty — spawns Claude Code per worktree
      |  Drizzle + better-sqlite3 — agent state
-     |  child_process — git, gh CLI, setup/teardown scripts
+     |  child_process — git, gh CLI, init/cleanup scripts
      v
 Filesystem
      |  SQLite DB — ~/.moxe/moxe.db
@@ -146,9 +146,9 @@ type EventType =
   | 'queued'
   | 'worktree_created'
   | 'ports_allocated'
-  | 'setup_start'    | 'setup_done'    | 'setup_failed'
+  | 'init_start'    | 'init_done'    | 'init_failed'
   | 'agent_start'    | 'agent_done'    | 'agent_failed'
-  | 'teardown_start' | 'teardown_done' | 'teardown_failed'
+  | 'cleanup_start' | 'cleanup_done' | 'cleanup_failed'
   | 'pr_created'     | 'issue_closed'
   | 'killed';
 
@@ -156,12 +156,12 @@ type EventType =
 // queued           → pending (gray)
 // worktree_created → pending (gray)
 // ports_allocated  → pending (gray)
-// setup_start      → setting up (blue)
-// setup_done       → setting up (blue)
+// init_start      → setting up (blue)
+// init_done       → setting up (blue)
 // agent_start      → running (blue pulse)
 // agent_done       → completing (green)
-// teardown_start   → tearing down (yellow)
-// teardown_done    → done (green)
+// cleanup_start   → tearing down (yellow)
+// cleanup_done    → done (green)
 // pr_created       → done (green)
 // issue_closed     → done (green)
 // *_failed         → failed (red)
@@ -180,32 +180,32 @@ While the agent is running, output streams live via WebSocket. If you reconnect 
 
 ### Agent lifecycle
 
-Each agent moves through a linear sequence. Any step can fail, which triggers teardown.
+Each agent moves through a linear sequence. Any step can fail, which triggers cleanup.
 
 ```
-queued → worktree_created → ports_allocated → setup_start → setup_done → agent_start → agent_done
+queued → worktree_created → ports_allocated → init_start → init_done → agent_start → agent_done
                                                                                            │
          ┌───────────────────────────────────────────────────────────────────────────────────┘
          v
-    teardown_start → teardown_done → pr_created → issue_closed
+    cleanup_start → cleanup_done → pr_created → issue_closed
 ```
 
 On failure at any step:
 ```
-*_failed → teardown_start → teardown_done
+*_failed → cleanup_start → cleanup_done
 ```
 
 On kill:
 ```
-killed → teardown_start → teardown_done
+killed → cleanup_start → cleanup_done
 ```
 
 - **queued** — agent is queued for launch
 - **worktree_created** — `git worktree add` creates an isolated branch at `~/.moxe/worktrees/<workspace-name>`
 - **ports_allocated** — port block reserved from `port-allocations.json`
-- **setup_start/done** — setup.sh runs inside the new worktree
+- **init_start/done** — init.sh runs inside the new worktree
 - **agent_start/done** — Claude Code spawns with the issue as context, PTY streams to XTerm.js
-- **teardown_start/done** — teardown.sh runs, then `git worktree remove`, then ports deallocated
+- **cleanup_start/done** — cleanup.sh runs, then `git worktree remove`, then ports deallocated
 - **pr_created** — `gh pr create` opens a PR linked to the issue
 - **issue_closed** — `gh issue close` marks the issue done
 
@@ -239,7 +239,7 @@ Three-column layout. Sidebar on the left for agent list, main area in the centre
 - Full XTerm.js instance, keyboard passthrough enabled
 - Scrollback buffer of 10,000 lines
 - Toggle between terminal view and diff view per agent
-- Kill button — confirms before sending SIGTERM, then runs teardown
+- Kill button — confirms before sending SIGTERM, then runs cleanup
 
 ### Main area — diff viewer
 
@@ -288,10 +288,10 @@ your-project/
 ├── .moxe/
 │   ├── config.json          # Project configuration
 │   ├── ports.json           # Per-project port definitions (optional)
-│   ├── setup.sh             # Setup entry point
-│   ├── teardown.sh          # Teardown entry point
+│   ├── init.sh             # Init entry point
+│   ├── cleanup.sh          # Cleanup entry point
 │   └── lib/                 # Optional shared utilities
-│       └── common.sh        # Helpers for setup/teardown
+│       └── common.sh        # Helpers for init/cleanup
 ├── src/
 └── ...
 ```
@@ -300,12 +300,12 @@ your-project/
 
 ```json
 {
-  "setup": "./.moxe/setup.sh",
-  "teardown": "./.moxe/teardown.sh"
+  "init": "./.moxe/init.sh",
+  "cleanup": "./.moxe/cleanup.sh"
 }
 ```
 
-Config lives per-project because each project has different setup needs. A Node project needs `npm install`, a Python project needs `pip install`, a Rust project needs `cargo build`. The scripts know what to do.
+Config lives per-project because each project has different init needs. A Node project needs `npm install`, a Python project needs `pip install`, a Rust project needs `cargo build`. The scripts know what to do.
 
 ### ports.json (optional)
 
@@ -362,7 +362,7 @@ Global `~/.moxe/config.json` (optional overrides):
 | MOXE_PORT_WEB | Port base + 1 (convenience) |
 | MOXE_PORT_DB | Port base + 2 (convenience) |
 
-`MOXE_WORKSPACE_NAME` is derived from the branch name, normalized to lowercase alphanumeric with hyphens, max 32 chars. Useful for naming containers, database branches, or port allocations in setup scripts.
+`MOXE_WORKSPACE_NAME` is derived from the branch name, normalized to lowercase alphanumeric with hyphens, max 32 chars. Useful for naming containers, database branches, or port allocations in init scripts.
 
 ### Execution rules
 
@@ -370,8 +370,8 @@ Global `~/.moxe/config.json` (optional overrides):
 - Teardown runs after Claude Code exits, regardless of success or failure
 - Both scripts time out after 5 minutes (configurable via global `scriptTimeout`)
 - stdout and stderr are captured and shown in the run log
-- A non-zero exit from setup aborts the agent → `setup_failed` event
-- A non-zero exit from teardown is logged but does not affect agent status
+- A non-zero exit from init aborts the agent → `init_failed` event
+- A non-zero exit from cleanup is logged but does not affect agent status
 - Scripts must be executable (`chmod +x`). Moxe checks this at agent start and warns if not.
 
 ## 8. Port Management
@@ -398,7 +398,7 @@ Workspace C: ports 4020–4029
 | +3 | Test runner / Playwright | 4003 |
 | +4–9 | Reserved for project-specific use | 4004–4009 |
 
-Projects define which offsets they use. The convention is a suggestion — setup scripts can use any port in their allocated block.
+Projects define which offsets they use. The convention is a suggestion — init scripts can use any port in their allocated block.
 
 ### Port allocation file
 
@@ -428,11 +428,11 @@ release_lock() {
 }
 ```
 
-Moxe handles allocation in the server before setup scripts run. The allocated port base is passed via environment variables.
+Moxe handles allocation in the server before init scripts run. The allocated port base is passed via environment variables.
 
 ### Database isolation
 
-For projects that need a database per workspace, setup scripts should:
+For projects that need a database per workspace, init scripts should:
 
 1. **Start an isolated container** named after the workspace:
    ```bash
@@ -481,7 +481,7 @@ EOF
 
 ### Shared services
 
-Some services (like MinIO/S3) can be shared across workspaces on fixed ports. These should be started once (not per-workspace) and referenced in setup scripts. Moxe doesn't manage shared services — that's left to the project's setup scripts.
+Some services (like MinIO/S3) can be shared across workspaces on fixed ports. These should be started once (not per-workspace) and referenced in init scripts. Moxe doesn't manage shared services — that's left to the project's init scripts.
 
 ### Cleanup
 
@@ -585,7 +585,7 @@ Iterative — each phase produces something usable.
 | 3 — Git worktrees | `git worktree add/remove` into `~/.moxe/worktrees/`, branch naming, worktree cleanup on kill/failure |
 | 4 — Port management | Port allocation service, `port-allocations.json`, locking, env var injection, stale allocation cleanup on startup |
 | 5 — GitHub integration | `gh issue list` in new agent modal, issue passed as context, `gh pr create` + `gh issue close` on completion |
-| 6 — Setup / teardown | Config file parsing, script execution with env vars (including ports), timeout handling, output captured to log |
+| 6 — Init / cleanup | Config file parsing, script execution with env vars (including ports), timeout handling, output captured to log |
 | 7 — UI | Three-column layout, status badges, agent switching, keyboard shortcuts. Tailwind + shadcn-svelte |
 | 8 — Diff viewer | File tree, unified diff with syntax highlighting via shiki, open in editor, create PR button |
 | 9 — Polish | Error states, orphan worktree cleanup on startup, reconnect/backfill from log file, queue management |
@@ -606,9 +606,9 @@ Iterative — each phase produces something usable.
 | node-pty crashes or leaks file descriptors under load | Low | node-pty is mature. Cap maxParallel at a sane default. Monitor with process.on('exit') cleanup. |
 | gh CLI not installed or not authenticated | Medium | Check at startup, show clear error with instructions if missing. |
 | Agent produces a huge diff that crashes the diff viewer | Low | Paginate diffs, cap at 1,000 lines rendered, link to raw file for the rest. |
-| Worktree cleanup fails, leaving orphaned branches | Medium | Teardown always attempts `git worktree remove`. Orphan detection on startup offers to clean up. |
+| Worktree cleanup fails, leaving orphaned branches | Medium | Archive always attempts `git worktree remove`. Orphan detection on startup offers to clean up. |
 | Port collisions between workspaces | Low | Centralized allocation with file locking. Stale allocation cleanup on startup. |
-| Docker not installed for DB-dependent projects | Medium | Setup script checks for Docker, fails with clear error. Not all projects need it — only those whose setup.sh uses containers. |
+| Docker not installed for DB-dependent projects | Medium | Init script checks for Docker, fails with clear error. Not all projects need it — only those whose init.sh uses containers. |
 | SvelteKit + Hono integration friction | Low | SvelteKit builds to static adapter. Hono just serves the files. No SSR coupling. |
 
 ## 13. Resolved Decisions

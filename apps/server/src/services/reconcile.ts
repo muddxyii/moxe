@@ -12,8 +12,8 @@ export async function reconcileStaleAgents(): Promise<void> {
 		const failEvent =
 			latest.type === "agent_start"
 				? "agent_failed"
-				: latest.type === "setup_start" || latest.type === "setup_done"
-					? "setup_failed"
+				: latest.type === "init_start" || latest.type === "init_done"
+					? "init_failed"
 					: null;
 
 		if (!failEvent) continue;

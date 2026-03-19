@@ -1,6 +1,6 @@
 # Moxe
 
-Local-first agent orchestrator for running multiple AI coding agents in parallel. Each agent works in its own git worktree, scoped to a GitHub Issue.
+Local-first agent orchestrator for running multiple Claude Code agents in parallel. Each agent works in its own git worktree, scoped to a GitHub Issue.
 
 See `docs/spec.md` for the full spec.
 
@@ -57,7 +57,7 @@ id, repo, issueNumber, issueTitle, issueBody, branch, worktreePath, logPath, pid
 id, agentId, type, payload, ts
 
 ### Event types
-`queued`, `worktree_created`, `ports_allocated`, `setup_start`, `setup_done`, `setup_failed`, `agent_start`, `agent_done`, `agent_failed`, `teardown_start`, `teardown_done`, `teardown_failed`, `pr_created`, `issue_closed`, `killed`
+`queued`, `worktree_created`, `ports_allocated`, `init_start`, `init_done`, `init_failed`, `agent_start`, `agent_done`, `agent_failed`, `pr_created`, `issue_closed`, `killed`
 
 ## Key patterns
 
@@ -66,14 +66,14 @@ id, agentId, type, payload, ts
 - **Turbo for task orchestration** — `pnpm dev`, `pnpm build`, `pnpm typecheck` all go through Turbo.
 - **Shared TypeScript configs** in `tooling/typescript/` — `base.json` for apps, `internal-package.json` for packages.
 - **Port management**: each workspace gets 10 consecutive ports from `~/.moxe/port-allocations.json`. Offsets: +0 API, +1 Web, +2 DB, +3 Test, +4-9 reserved.
-- **Per-project config**: target repos have a `.moxe/` directory with `config.json`, `setup.sh`, `teardown.sh`, and optional `ports.json`.
+- **Per-project config**: target repos have a `.moxe/` directory with `config.json`, `init.sh`, `cleanup.sh`, and optional `ports.json`.
 - **Global state**: `~/.moxe/` holds `moxe.db`, `port-allocations.json`, `worktrees/`, and optional `config.json`.
 - **Terminal output**: written to `<worktree>/agent.log`, not stored in DB. Streamed live via WebSocket, backfilled from log file on reconnect.
 - **Killed agent branches**: preserved by default. Worktree removed from disk, branch stays for inspection.
 - **No run history**: re-running an issue creates a new agent row. Old row stays, old worktree is cleaned up.
 - **PR bodies**: comprehensive, scaled by change size (summary only for small, full context for large). Agent generates the content. Always includes `Closes #<n>`.
 
-## Environment variables for setup/teardown scripts
+## Environment variables for init/cleanup scripts
 
 MOXE_ISSUE_NUMBER, MOXE_ISSUE_TITLE, MOXE_BRANCH, MOXE_WORKTREE_PATH, MOXE_ROOT_PATH, MOXE_WORKSPACE_NAME, MOXE_PORT_BASE, MOXE_PORT_API, MOXE_PORT_WEB, MOXE_PORT_DB
 

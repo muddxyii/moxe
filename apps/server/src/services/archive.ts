@@ -25,23 +25,23 @@ const ARCHIVABLE_STATUSES = new Set([
 ]);
 
 // ---------------------------------------------------------------------------
-// Config — reads teardown script from .moxe/config.json
+// Config — reads cleanup script from .moxe/config.json
 // ---------------------------------------------------------------------------
 
-function readTeardownScript(repoPath: string): string | null {
+function readCleanupScript(repoPath: string): string | null {
 	let raw: Record<string, unknown> = {};
 	try {
 		const text = readFileSync(join(repoPath, ".moxe", "config.json"), "utf-8");
 		raw = JSON.parse(text) as Record<string, unknown>;
 	} catch {
-		// No config — no teardown
+		// No config — no cleanup
 	}
 
 	const configured =
-		typeof raw.teardown === "string" ? (raw.teardown as string) : null;
+		typeof raw.cleanup === "string" ? (raw.cleanup as string) : null;
 	const scriptPath = configured
 		? resolvePath(repoPath, configured)
-		: join(repoPath, ".moxe", "teardown.sh");
+		: join(repoPath, ".moxe", "cleanup.sh");
 
 	if (!existsSync(scriptPath)) return null;
 	try {
@@ -153,9 +153,9 @@ export async function archiveAgent(agentId: string): Promise<void> {
 	// Kill PTY if still running (safe no-op if dead)
 	await ptyManager.kill(agentId);
 
-	// Run teardown script if configured
-	const teardownScript = readTeardownScript(agent.repoPath);
-	if (teardownScript) {
+	// Run cleanup script if configured
+	const cleanupScript = readCleanupScript(agent.repoPath);
+	if (cleanupScript) {
 		const { scriptTimeout } = readGlobalConfig();
 		const logPath = agent.logPath ?? join(agent.worktreePath, "agent.log");
 		const baseEnv = Object.fromEntries(
@@ -168,7 +168,7 @@ export async function archiveAgent(agentId: string): Promise<void> {
 			...buildMoxeEnv(agent),
 		};
 		await runScript(
-			teardownScript,
+			cleanupScript,
 			agent.worktreePath,
 			env,
 			logPath,

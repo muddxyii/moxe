@@ -10,7 +10,7 @@ let { events }: Props = $props();
 
 const successEvents = new Set(["agent_done", "archive_done"]);
 const failureEvents = new Set([
-	"setup_failed",
+	"init_failed",
 	"agent_failed",
 	"archive_failed",
 	"killed",

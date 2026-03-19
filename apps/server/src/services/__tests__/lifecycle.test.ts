@@ -292,8 +292,8 @@ describe("agent lifecycle", () => {
 		);
 		expect(eventTypes).not.toContain("pr_created");
 		expect(eventTypes).not.toContain("issue_closed");
-		expect(eventTypes).not.toContain("teardown_start");
-		expect(eventTypes).not.toContain("teardown_done");
+		expect(eventTypes).not.toContain("cleanup_start");
+		expect(eventTypes).not.toContain("cleanup_done");
 	});
 
 	it("kill stops PTY and marks killed without cleanup", async () => {

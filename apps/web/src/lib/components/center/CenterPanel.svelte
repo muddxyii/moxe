@@ -108,13 +108,13 @@ $effect(() => {
 		</div>
 
 		<!-- Terminal area — all tabs mounted, inactive ones hidden via visibility -->
-		<div class="relative flex-1 overflow-hidden bg-[var(--background)] p-1">
+		<div class="relative flex-1 overflow-hidden bg-[var(--background)] p-2">
 			{#each currentTabs as tab (tab.id)}
 				<div
-					class="absolute inset-1"
+					class="absolute inset-2"
 					style="visibility:{tab.id === activeId ? 'visible' : 'hidden'};"
 				>
-					<Terminal wsUrl={tab.wsUrl} kind={kindFromWsUrl(tab.wsUrl)} />
+					<Terminal wsUrl={tab.wsUrl} kind={kindFromWsUrl(tab.wsUrl)} initialCommand={tab.initialCommand} onCommandSent={() => locationKey && selectionStore.clearInitialCommand(locationKey, tab.id)} />
 				</div>
 			{/each}
 		</div>

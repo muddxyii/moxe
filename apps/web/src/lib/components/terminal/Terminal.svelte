@@ -8,9 +8,11 @@ import { getThemeById } from "$lib/theme/themes";
 interface Props {
 	wsUrl: string;
 	kind: "shell" | "worktree-shell" | "agent";
+	initialCommand?: string;
+	onCommandSent?: () => void;
 }
 
-let { wsUrl, kind }: Props = $props();
+let { wsUrl, kind, initialCommand, onCommandSent }: Props = $props();
 
 let terminal: Terminal | undefined = $state();
 let ws: WebSocket | null = null;
@@ -22,6 +24,7 @@ let connectionStatus = $state<"connecting" | "connected" | "disconnected">(
 let processAlive = $state(true);
 let needsReset = false;
 let suppressInput = false;
+let initialCommandSent = false;
 let writeBatch = "";
 let batchRaf: number | null = null;
 const settingsStore = getSettingsStore();
@@ -137,6 +140,15 @@ function connectWs(url: string) {
 				}
 			} else if (msg.type === "status") {
 				processAlive = msg.alive as boolean;
+				if (msg.alive && initialCommand && !initialCommandSent) {
+					initialCommandSent = true;
+					onCommandSent?.();
+					setTimeout(() => {
+						if (ws?.readyState === WebSocket.OPEN) {
+							ws.send(`${initialCommand}\n`);
+						}
+					}, 500);
+				}
 			}
 		} catch {
 			terminal.write(event.data);

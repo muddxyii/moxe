@@ -12,9 +12,9 @@ export type EventType =
 	| "queued"
 	| "worktree_created"
 	| "ports_allocated"
-	| "setup_start"
-	| "setup_done"
-	| "setup_failed"
+	| "init_start"
+	| "init_done"
+	| "init_failed"
 	| "agent_start"
 	| "agent_done"
 	| "agent_failed"
@@ -83,3 +83,19 @@ export type WorkspaceGroup = {
 };
 
 export type ShellSession = Repo;
+
+export interface ScriptStatus {
+	exists: boolean;
+	executable: boolean;
+	path: string | null;
+}
+
+export interface WorkspaceConfig {
+	configured: boolean;
+	hasMoxeDir: boolean;
+	hasConfig: boolean;
+	init: ScriptStatus;
+	cleanup: ScriptStatus;
+	baseBranch: string | null;
+	localPath: string;
+}
